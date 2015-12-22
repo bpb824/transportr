@@ -1,0 +1,49 @@
+---
+title: "Exporting GTFS Data to an ESRI Shapefile"
+author: "Bryan Blanc"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Vignette Title}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+The following is a quick walkthrough of how to utilize fucntions from `transportr` to extract and export transit route shapefiles from GTFS feeds.
+
+First, you'll need to install `transportr` and do a couple of package imports:
+
+```{r,message=FALSE,warning=FALSE}
+#install devtools if not already installed 
+#install.packages("devtools")
+#devtools::install_github("bpb824/transportr")
+
+require(transportr)
+require(leaflet)
+require(sp)
+require(rgdal)
+require(DT)
+```
+
+Then you're ready to start working with your GTFS files. Replace paths with your relevant file paths. '.' indicates the current directory (your working directory) You also don't have to return the shape as an R object if you're going to be working with the data in GIS; I'm returning it here for visualization's sake in the next step. Here I am using the GTFS feed for the greater Hartford, CT area, but any standard GTFS feed will work.
+
+```{r,message=FALSE,warning=FALSE}
+#Replace path with your working directory
+setwd("C:/Users/bblanc/OneDrive/_transportr_development")
+
+ 
+result = exportRouteShape(feedPath = "googleha_transit", 
+                 outPath = ".",
+                 shapeName = "test",
+                 returnShape =TRUE)
+```
+As a quick sniff test to make sure the data turned out alright, you can look at a rendered leaflet map or data table. 
+```{r,message=FALSE,warning=FALSE}
+leaflet(width="100%",height = 500) %>% 
+  addProviderTiles("CartoDB.Positron",options = providerTileOptions(noWrap = TRUE))%>% 
+  addPolylines(data=result,color = "green")
+
+datatable(result@data)
+```
+
+

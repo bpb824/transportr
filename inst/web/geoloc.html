@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+<title>geoloc. transportr 0.1.0</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="author" content="
+John Whalen
+">
+
+<link href="css/bootstrap.css" rel="stylesheet">
+<link href="css/bootstrap-responsive.css" rel="stylesheet">
+<link href="css/highlight.css" rel="stylesheet">
+<link href="css/staticdocs.css" rel="stylesheet">
+
+<!--[if lt IE 9]>
+  <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+<![endif]-->
+
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    tex2jax: {
+      inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+      processEscapes: true
+    }
+  });
+</script>
+<script type="text/javascript"
+  src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+  </head>
+
+  <body>
+    <div class="navbar">
+  <div class="navbar-inner">
+    <div class="container">
+      <a class="brand" href="#">transportr 0.1.0</a>
+      <div class="nav">
+        <ul class="nav">
+          <li><a href="index.html"><i class="icon-home icon-white"></i> Index</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+    <div class="container">
+      <header>
+        
+      </header>
+      
+      <h1>Geolocate places using Google Geoloaction API</h1>
+
+<div class="row">
+  <div class="span8">
+    <h2>Usage</h2>
+    <pre><div>geoloc(place, apikey)</div></pre>
+    
+    <h2>Arguments</h2>
+    <dl>
+      <dt>place</dt>
+      <dd></dd>
+      <dt>apikey</dt>
+      <dd></dd>
+    </dl>
+    
+    <div class="Value">
+      <h2>Value</h2>
+
+      <p><dl>
+Returns an object of class <code>GoogleGeoloc</code>, basically a list of the following elements:
+<dt>coordinates</dt><dd>  A vector of two numbers, the first representing the longitude and the second representing the latitude.</dd></p>
+  
+      <p><dt>accuracy</dt><dd>  Accuracy rating of geolocation.  </dd></p>
+  
+      <p><dt>city</dt><dd>  City containing the requested address  </dd></p>
+  
+      <p><dt>state</dt><dd>  State containing the requested address  </dd></p>
+  
+      <p><dt>country</dt><dd>  Country containing the requested address  </dd></p>
+  
+      <p></dl></p>
+  
+    </div>
+
+    <div class="Description">
+      <h2>Description</h2>
+
+      <p>A function to perform the Google Geolocation API call, and return the longitude and latitude coordinates of the query location.</p>
+  
+    </div>
+
+    <div class="Details">
+      <h2>Details</h2>
+
+      <p>Use of this function requires a Google API key, which is different from the Walk Score API key. Get one here: http://code.google.com/apis/maps/signup.html</p>
+  
+    </div>
+
+    <div class="Note">
+      <h2>Note</h2>
+
+      <p>Function taken from walkscoreAPI package and modified by Bryan Blanc.</p>
+  
+    </div>
+
+    <div class="References">
+      <h2>References</h2>
+
+      <p>https://cran.r-project.org/web/packages/walkscoreAPI/index.html</p>
+  
+    </div>
+      </div>
+  <div class="span4">
+    <!-- <ul>
+      <li>geoloc</li>
+    </ul>
+    <ul>
+      
+    </ul> -->
+      
+    
+    <h2>Author</h2>
+    
+John Whalen
+
+    
+  </div>
+</div>
+      
+      <footer>
+      <p class="pull-right"><a href="#">Back to top</a></p>
+<p>Built by <a href="https://github.com/hadley/staticdocs">staticdocs</a>. Styled with <a href="http://twitter.github.com/bootstrap">bootstrap</a>.</p>
+      </footer>
+    </div>
+  </body>
+</html>

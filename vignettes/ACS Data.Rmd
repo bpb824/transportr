@@ -1,0 +1,161 @@
+---
+title: "Querying, Managing, and Mapping ACS Data in R"
+author: "Bryan Blanc"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Vignette Title}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+American Communtiy Survey data are used in a wide variety of applications by transportation planners. Until recently, much of this data required a fairly arduous querying, downloading, and cleaning process; the US Census Bureau's APIs and developers' query wrappers have made this task much easier. 
+
+There is already a great R package for dealing with ACS data aptly named [`acs`](https://cran.r-project.org/web/packages/acs/index.html), so this vignette does not rely much on `transportr`, but integrates well with other workflows utilizing `transportr`. Instead, this vignette will use several examples walk you through using the ACS package to expedite and automate your workflows relying on ACS data. 
+
+Other additional information for utilizing the `acs` package can be found at the below links:
+
+- [R Package Documentation](https://cran.r-project.org/web/packages/acs/acs.pdf)
+- [A tutorial assembled by the package's creator](http://eglenn.scripts.mit.edu/citystate/wp-content/uploads/2013/06/wpid-working_with_acs_R3.pdf)
+- [A great blog post covering some of the same topics as below](http://zevross.com/blog/2015/10/14/manipulating-and-mapping-us-census-data-in-r-using-the-acs-tigris-and-leaflet-packages-3/)
+
+## Setting Up Your Workspace
+If you have worked with R before, much of this should be familiar. There are a few initial things you should do to set up your workspace.
+
+First you will want to load in some packages with functions you will need to follow the tutorial:
+```{r,message=FALSE}
+#Bryan's transportation data package. Includes some data you will need to work with this tutorial.
+require(transportr)
+#The workhorse package for querying ACS data
+require(acs)
+#The premier package for data handling
+require(dplyr)
+#A great static plotting framework for R
+require(ggplot2)
+#Includes a few scales for plotting that will come in handy
+require(scales)
+#This package includes utilities for reading/writing shapefiles
+require(rgdal)
+#This package includes the neccessary infrastructure for handling spatial data in R
+require(sp)
+#This package has a few functions useful for dealing with spatial data
+require(rgeos)
+#This package has some handy functions for dealing with character strings
+require(stringr)
+#This package is used to create interactive maps
+require(leaflet)
+#This package is used for a couple of HTML-related functions
+require(htmltools)
+#This package is used to write the leaflet map to a standalone HTML page
+require(htmlwidgets)
+```
+
+Then you need to set your working directory and load in your US Census Bureau API Key:
+```{r}
+#Set working directory for input and output files
+#Set your working directory and uncomment the below line
+#setwd("/Users/bblanc/OneDrive/_transportr_development/_projects/censusData")
+#Bryan's ACS API Key
+api_key = "04976a4a378107d2fb53acdbde84d0aad121cb10"
+#'Install' ACS API Key so you don't have to call it with every function
+api.key.install(api_key)
+```
+
+## Portland Census Tract Bicycle Mode Share Map and Data Export
+For our first example, we are going to query bicycle commute mode shares for every census tract in the Portland metro area for the following four counties:
+
+- Oregon
+    - Multnomah County
+    - Washington County
+    - Clackamas County
+- Washington
+    - Clark County
+    
+ACS data queries require four parameters:
+
+Geography
+  : What geographical extent (e.g., the counties mentioned above) and resolution (e.g., census tract level) are you requesting data for?
+  
+ACS Table
+  : What table contains the statistics you are interested in? This may take some exploring prior to your data query. You can search for tables using keywords with the `acs.lookup` function, or you can utilize the [American Fact Finder web site](http://factfinder.census.gov/faces/nav/jsf/pages/index.xhtml) to find the specific table you are interested in. 
+  
+End Year
+  : ACS data are catalogued by the last year in the sample. What end year are you interested in?
+
+Span
+  : ACS data come in three flavors: 5-year, 3-year, and 1-year samples. 1-year samples are only available for areas where there was a large enough sample for statistics to be reliable. 5-year samples are available for all census tracts. 
+
+```{r,warning=FALSE,message=FALSE}
+#Here is how you put together geographies using the `geo.make()` function. 
+#You can add geographies together easily to form compound geography objects. 
+metro = geo.make(state = "OR", county = c("Multnomah County","Washington County","Clackamas County"),tract="*")+geo.make(state="WA",county="Clark County", tract = "*")
+
+#Query ACS data based on geography, table, end year, and span. 
+result = acs.fetch(geography = metro,table.number = "B08006",col.names = "pretty", endyear = 2014,span =5)
+```
+
+Here we will load in the shapefiles for the census tracts we are interested in. Because we have two states, we will have to load in two shapefiles and then merge them.
+```{r,warning=FALSE,message=FALSE}
+#Find the censusGeographies folder in this package's data:
+packPath = system.file("extdata","censusGeographies",package="transportr")
+#You can replace `packPath` with the path to where you've store the boundary shapefile
+orShape = readOGR(packPath,"cb_2014_41_tract_500k")
+waShape = readOGR(packPath,"cb_2014_53_tract_500k")
+tractShape = rbind.SpatialPolygonsDataFrame(orShape,waShape)
+tractData = tractShape@data
+```
+
+Now we're going to subset the table recieved from the ACS query to just a few columns we're interested in.
+```{r,warning=FALSE,message=FALSE}
+geo = result@geography
+dat = result@estimate
+all = cbind(geo,dat)
+rownames(all)=1:nrow(all)
+
+sub = all %>% select(state,county,tract,contains("Total"),contains("Bicycle"))
+sub = sub %>% rename(total_commute=`Sex of Workers by Means of Transportation to Work:  Total: `,
+                     total_bike=`Sex of Workers by Means of Transportation to Work:  Bicycle `,
+                     bike_male=`Sex of Workers by Means of Transportation to Work:  Male: Bicycle `,
+                     bike_female=`Sex of Workers by Means of Transportation to Work:  Female: Bicycle `)
+sub = sub %>% mutate(bike_prop = total_bike/total_commute)
+
+sub$county =str_pad(sub$county,width=3,side="left",pad="0")
+subShape = tractShape[tractShape$TRACTCE %in% sub$tract &
+                        tractShape$COUNTYFP %in% sub$county &
+                        tractShape$STATEFP %in% sub$state,]
+subShape_data = subShape@data
+sub$GEOID = paste0(sub$state,sub$county,sub$tract)
+subShape_data = subShape_data %>% left_join(sub,by="GEOID")
+subShape@data = subShape_data
+```
+
+Here is where a leaflet map is created to visualize the data. You can skip this step if you just want to get to exporting your data to a shapefile.
+```{r,warning=FALSE,message=FALSE}
+
+#Create a color palette between blue and red corresponding to the domain of the quantity we 
+#want to visualize; in this case the bicycle commute share. 
+pal = colorNumeric(
+  palette = c("blue","red"),
+  domain = subShape_data$bike_prop
+)
+
+#Create the leaflet map widget
+leaflet(subShape, width = "100%",height =500) %>%
+#Add base map tiles
+  addProviderTiles("CartoDB.Positron",options = providerTileOptions(noWrap = TRUE))%>%
+#Draw the polygons on the map using our palette and creating a popup with the bicycle commute share
+  addPolygons(fillColor = ~pal(bike_prop),fillOpacity=0.5,weight=1.5,color=~pal(bike_prop),popup = ~htmlEscape(paste0(round(bike_prop*100,1),"%"))) %>%
+  addLegend(position="bottomright",pal=pal, values = ~bike_prop, 
+            title="Bicycle Mode Share",
+            labFormat = labelFormat(prefix = '', suffix = '%',transform = function(x) 100 * x))
+```
+
+Finally, you can write the result to a shapefile. 
+```{r,warning=FALSE,message=FALSE}
+##Export the data to a shapefile
+outpath = "/Users/bblanc/Downloads"
+writeOGR(subShape,outpath,"portlandBikeTracts",overwrite_layer = TRUE,driver = "ESRI Shapefile")
+```
+
+
+

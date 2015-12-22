@@ -8,6 +8,9 @@ Maintainer: <bryanpblanc@gmail.com>
 Description: Tools for querying, managing, exploring, and analyzing transportation/transportation-related data.
 License: GPL-3
 LazyData: TRUE
-Imports: stats, RPostgreSQL, RMySQL, DBI, rjson, plyr, lubridate, timeDate, ggplot2, rgdal, rgeos, sp, Hmisc, shapefiles
-Suggests: knitr
+Imports: stats, RPostgreSQL, RMySQL, DBI, rjson, plyr,
+         lubridate, timeDate, ggplot2, rgdal, rgeos,
+         sp, Hmisc, shapefiles
+Suggests: knitr,
+    rmarkdown
 VignetteBuilder: knitr
