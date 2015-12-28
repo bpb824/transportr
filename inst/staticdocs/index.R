@@ -6,10 +6,10 @@ sd_section(
 sd_section(
   "GTFS Utilities",
   "These functions are used to download and prepare General Transit Feed Specification (GTFS) data.",
-  c("fetchFeed","spatialTransitShapes")
+  c("fetchFeed","spatialTransitShapes","exportRouteShape")
 )
 sd_section(
   "General Use Functions",
   "These functions are used to peform various intermediate data handling.",
-  c("list2frame")
+  c("list2frame","naturalBreaks")
 )

@@ -1,0 +1,75 @@
+---
+title: "Calculating Natural Breaks"
+author: "Bryan Blanc"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Calculating Natural Breaks}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+This brief vignette will walk you through the steps of calculating natural breaks for a given table, list of fields, and number of breaks.
+
+## Setting up
+
+The first step is setting up your work space.This requires loading packages which contains functions you'll be using, and then setting your working directory. 
+
+```{r,message=FALSE,warning=FALSE}
+#Import the package with the function you will need. 
+require(transportr)
+#This package can display a table interactively
+require(DT)
+#You'll need this package if you want to read Excel files
+require(readxl)
+
+#Set your working directory, uncomment the line below this. This working directory should either contain the files
+# you want to work with, or you can reference the absolute or relative paths in the read-in functions. 
+#setwd("G:/Current/SALT_LAKE_CITY_TMP_(2014.074106)/Table")
+```
+## For a .csv file
+
+Now you will import the table you are calculating breaks for, run the function, and then save out the results. 
+```{r,message=FALSE,warning=FALSE}
+#read your table into an R dataframe object
+table = read.csv("AGE65UP.csv",stringsAsFactors = FALSE)
+
+#You can use this command to see what the first few rows of your table look like
+head(table)
+
+#input your arguments into the function below. You are inputting the table read in in the line above
+#and defining the fields you want to calculate breaks for in the vector below. You can add more fields 
+#by seperating them with a comma and enclosing the character strings in quotes. 
+result = naturalBreaks(table = table, 
+              fields = c("TOT","X65UP"), 
+              numBreaks = 7)
+#this will interactively display the resulting table
+datatable(result)
+#Your result has been calculated. You can also examine it in RStudio's data view (default upper right) 
+#or just save it out to a .csv file as below. 
+write.csv(result,"broken.csv")
+```
+
+## For an Excel (.xls or .xlsx) file
+
+For reading Excel files, you will use the `read_excel` function from the `readxl` package. Excel's data format is more complex that .csv, so this may take slightly longer. You will import the table you are calculating breaks for, run the function, and then save out the results to a .csv file (the `readxl` package doesn't yet have a write function, but Excel can read .csv's easily enough). 
+
+```{r,message=FALSE,warning=FALSE}
+#read your table into an R dataframe object from excel
+table = read_excel("Corridor Analysis Ph2_v5_GIS.xlsx")
+
+#You can use this command to see what the first few rows of your table look like
+head(table)
+
+#input your arguments into the function below. You are inputting the table read in in the line above
+#and defining the fields you want to calculate breaks for in the vector below. You can add more fields 
+#by seperating them with a comma and enclosing the character strings in quotes. 
+result = naturalBreaks(table = table, 
+              fields = c("B_TPI","C1_Pop_15","F_Access"), 
+              numBreaks = 7)
+#this will interactively display the resulting table
+datatable(result)
+#Your result has been calculated. You can also examine it in RStudio's data view (default upper right) 
+#or just save it out to a .csv file as below. 
+write.csv(result,"broken_excel.csv")
+```

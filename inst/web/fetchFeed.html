@@ -52,10 +52,13 @@
 <div class="row">
   <div class="span8">
     <h2>Usage</h2>
-    <pre><div>fetchFeed(feedName)</div></pre>
+    <pre><div>fetchFeed(feedName)</div>
+<div>fetchFeed(feedName)</div></pre>
     
     <h2>Arguments</h2>
     <dl>
+      <dt>feedName</dt>
+      <dd>Name of transit agency (will try to find similar names if not exact match)</dd>
       <dt>feedName</dt>
       <dd>Name of transit agency (will try to find similar names if not exact match)</dd>
     </dl>
@@ -64,7 +67,9 @@
       <h2>Value</h2>
 
       <p><dl>
-None
+None</p>
+  
+      <p>None
 </dl></p>
   
     </div>
@@ -72,6 +77,8 @@ None
     <div class="Description">
       <h2>Description</h2>
 
+      <p>This function will match the requested transit agency name with a feed via the GTFS data exchange, and the latest feed files will be downloaded to 'feeds' subfolder of working directory.</p>
+  
       <p>This function will match the requested transit agency name with a feed via the GTFS data exchange, and the latest feed files will be downloaded to 'feeds' subfolder of working directory.</p>
   
     </div>

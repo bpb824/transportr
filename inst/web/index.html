@@ -96,6 +96,9 @@ devtools::install_github(&quot;bpb824/transportr&quot;)
             
       <li>
         <code><a href="spatialTransitShapes.html">spatialTransitShapes</a></code><br />Create SpatialLines from GTFS shapes.txt file</li>
+            
+      <li>
+        <code><a href="exportRouteShape.html">exportRouteShape</a></code><br />Export GTFS routes to ESRI shapefile</li>
     
     </ul>
     <h3>General Use Functions</h3>
@@ -106,17 +109,26 @@ devtools::install_github(&quot;bpb824/transportr&quot;)
         
       <li>
         <code><a href="list2frame.html">list2frame</a></code><br />Converts Two-Level List to Data Frame</li>
+            
+      <li>
+        <code><a href="naturalBreaks.html">naturalBreaks</a></code><br />Calculate natural breaks for specified fields in table</li>
     
     </ul>
   </div>
   
   <div class="span3 offset1">
+    <h2>Vignettes</h2>
+    <ul>
+      <li><a href="vignettes/ACS_Data.html">Querying, Managing, and Mapping ACS Data in R</a></li>
+      <li><a href="vignettes/GTFS_Export.html">Exporting GTFS Data to an ESRI Shapefile</a></li>
+      <li><a href="vignettes/naturalBreaks.html">Calculating Natural Breaks</a></li>
+    </ul>
         
     <h2>Dependencies</h2>
     <ul>
       
-      <li><strong>Imports</strong>: stats, RPostgreSQL, RMySQL, DBI, rjson, plyr, lubridate, timeDate, ggplot2, rgdal, rgeos, sp, Hmisc, shapefiles</li>
-      <li><strong>Suggests</strong>: knitr</li>
+      <li><strong>Imports</strong>: stats, RPostgreSQL, RMySQL, DBI, rjson, dplyr, lubridate, timeDate, ggplot2, rgdal, rgeos, sp, Hmisc, shapefiles, classInt</li>
+      <li><strong>Suggests</strong>: knitr, rmarkdown</li>
       
     </ul>
     <h2>Authors</h2>
