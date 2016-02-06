@@ -3,20 +3,83 @@
 #' @param from Start location to fetch directions for (vector in [Lat Lng] format)
 #' @param to End location to fetch directions for (vector in [Lat Lng] format)
 #' @param key API key for Google Directions API (from Google Developers Console)
+#' @param mode Travel mode: one of four strings: 'driving', 'walking', 'biking', 'transit'
+#' @param departure Optional departure time of POSIXct class. Cannot specify both arrival and departure times.
+#' @param arrival Optional arrival time of POSIXct class. Cannot specify both arrival and departure times.
 #'
 #' @return Encoded google directions string
 #' @export
-#'
-#' @references Adapted from function here: https://gist.github.com/diegovalle/916889/895dba68c0f9f5398c9d9c75856126e233b9acd7
-getGoogleDirections <- function(from, to, key) {
+getGoogleDirections <- function(from, to, key, mode, departure=NULL, arrival=NULL,alternatives=FALSE) {
 
-  from=paste(from[2],from[1],sep=",")
-  to = paste(to[2],to[1],sep=",")
+  if(!is.null(departure) & !is.null(arrival)){
+    stop("Cannot specify both departure and arrival times.")
+  }
 
-  baseurl <- "https://maps.googleapis.com/maps/api/directions/json?origin="
-  url = paste0(baseurl,from,"&destination=",to,"&mode=bicycling&key=",key)
-  rjson::fromJSON(paste(readLines(url), collapse=""))
+  to = paste0(to,collapse = ",")
+  from = paste0(from,collapse=",")
+
+  if(!is.null(departure)){
+    time = as.numeric(departure)
+    baseurl <- "https://maps.googleapis.com/maps/api/directions/json?origin="
+    url = paste0(baseurl,from,"&destination=",to,"&mode=",mode,"&key=",key,"&departure_time=",time)
+  }else if(!is.null(arrival)){
+    time = as.numeric(arrival)
+    baseurl <- "https://maps.googleapis.com/maps/api/directions/json?origin="
+    url = paste0(baseurl,from,"&destination=",to,"&mode=",mode,"&key=",key,"&arrival_time=",time)
+  }else{
+    baseurl <- "https://maps.googleapis.com/maps/api/directions/json?origin="
+    url = paste0(baseurl,from,"&destination=",to,"&mode=",mode,"&key=",key)
+  }
+
+  if(alternatives){
+    url = paste0(url,"&alternatives=true")
+  }
+
+  return(rjson::fromJSON(paste(readLines(url), collapse="")))
 }
+
+
+#' Query travel times from Google API
+#'
+#' @param from Start location to fetch directions for (vector in [Lat Lng] format)
+#' @param to End location to fetch directions for (vector in [Lat Lng] format)
+#' @param key API key for Google Directions API (from Google Developers Console)
+#' @param mode Travel mode: one of four strings: 'driving', 'walking', 'biking', 'transit'
+#' @param departure Optional departure time of POSIXct class. Cannot specify both arrival and departure times.
+#' @param arrival Optional arrival time of POSIXct class. Cannot specify both arrival and departure times.
+#'
+#' @return Travel time (minutes)
+#' @export
+travel_time= function(from,to,key,mode,departure = NULL, arrival = NULL){
+
+  if(!is.null(departure) & !is.null(arrival)){
+    stop("Cannot specify both departure and arrival times.")
+  }
+
+  if(!is.null(departure)){
+    dirs =  getGoogleDirections(from,to,gKey,mode,departure = departure)
+  }else if(!is.null(arrival)){
+    dirs =  getGoogleDirections(from,to,gKey,mode,arrival = arrival)
+  }
+
+  if(dirs$status=="OK"){
+    numRoutes = length(dirs$routes)
+    print(paste0(numRoutes," routes returned successfully."))
+    if(numRoutes>1){
+      timeVector = vector()
+      for(i in 1:numRoutes){
+        timeVector[i] = dirs$routes[[i]]$legs[[1]]$duration$value/60
+      }
+      time = mean(timeVector)
+    }else{
+      time = dirs$routes[[i]]$legs[[1]]$duration$value/60
+    }
+  }else{
+    stop("API returned no results. Check you inputs")
+  }
+}
+
+
 
 #' Convert SpatialLines to coordinate data frame for map matching.
 #'
@@ -54,7 +117,6 @@ lines2points = function(linesShape,trip_id, dummyDate){
   }
   return(crds)
 }
-
 
 #Google polyline decoder borrowed from:
 #http://facstaff.unca.edu/mcmcclur/GoogleMaps/EncodePolyline/decode.js

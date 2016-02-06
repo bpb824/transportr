@@ -31,26 +31,79 @@ fetchFeed = function(feedName){
   }
 }
 
-#' Create SpatialLines from GTFS shapes.txt file
+#' Export GTFS routes to ESRI shapefile
 #'
-#' @param feedPath Absolute or relative path to the folder containing GTFS feed files.
+#' @param feedPath The relative or absolute path to the folder containing the GTFS feed text files
+#' @param outPath The relative or absolute path to the folder where you would like to save the reuslting shapefile
+#' @param shapeName The filename for your resulting shapefile
+#' @param returnShape Boolean indicating if route shape should be returned
 #'
-#' @return SpatialLines object corresponding to shapes.txt file
+#' @return Returns route shape as SpatialLinesDataFrame if desired
 #' @export
-spatialTransitShapes = function(feedPath){
-  shapes = read.csv(paste0(feedPath,"/shapes.txt"), stringsAsFactors = FALSE)
+exportRouteShape = function(feedPath,outPath,shapeName,returnShape=FALSE){
+  shapes = read.csv(paste0(feedPath,"/shapes.txt"),stringsAsFactors = FALSE)
+  routes = read.csv(paste0(feedPath,"/routes.txt"),stringsAsFactors = FALSE)
+  trips = read.csv(paste0(feedPath,"/trips.txt"),stringsAsFactors = FALSE)
+  #gtfs_stops = read.csv(paste0(feedPath,"/stops.txt"),stringsAsFactors = FALSE)
+
   shapeCoords = list()
-  shapeList = unique(shapes$shape_id)
+  shapeList = sort(unique(trips$shape_id))
   for (i in 1:length(shapeList)){
     shapeCoords[[as.character(shapeList[i])]]= shapes[shapes$shape_id == shapeList[i],]
   }
   lineList = list()
   for (i in 1:length(shapeCoords)){
     id = names(shapeCoords[i])
-    shape = sp::Line(shapeCoords[[i]][,c("shape_pt_lon",c("shape_pt_lat"))])
+    shape = sp::Line(as.data.frame(shapeCoords[[i]])[,c("shape_pt_lon",c("shape_pt_lat"))])
     lineList[[i]]= sp::Lines(list(sp::Line(shape)),id)
   }
   transitShapes = sp::SpatialLines(lineList, sp::CRS("+init=epsg:4326"))
-  return(transitShapes)
+
+  shapeIds = sort(unique(trips$shape_id))
+  shapeData = data.frame(matrix(nrow = length(shapeIds),ncol =7))
+  colnames(shapeData)=c("shape_id","route_id","direction_id","route_short_name","route_long_name","route_type","route_url")
+  shapeData$shape_id = shapeIds
+  for (i in 1:nrow(shapeData)){
+    sid = shapeData$shape_id[i]
+    shapeData$route_id[i] = trips$route_id[trips$shape_id==sid][1]
+    shapeData$direction_id[i] = trips$direction_id[trips$shape_id==sid][1]
+    shapeData$route_short_name[i]=routes$route_short_name[routes$route_id==shapeData$route_id[i]]
+    shapeData$route_long_name[i]=routes$route_long_name[routes$route_id==shapeData$route_id[i]]
+    shapeData$route_type[i]=routes$route_type[routes$route_id==shapeData$route_id[i]]
+    shapeData$route_url[i]=routes$route_url[routes$route_id==shapeData$route_id[i]]
+    #print(i)
+  }
+  rownames(shapeData)=shapeData$shape_id
+
+  route_shape = sp::SpatialLinesDataFrame(transitShapes,shapeData)
+
+  rgdal::writeOGR(route_shape,outPath,shapeName,overwrite_layer = TRUE,driver = "ESRI Shapefile")
+
+  if(returnShape==TRUE){
+    return(route_shape)
+  }
+
+}
+
+#' Export GTFS stops to ESRI shapefile
+#'
+#' @param feedPath The relative or absolute path to the folder containing the GTFS feed text files
+#' @param outPath The relative or absolute path to the folder where you would like to save the reuslting shapefile
+#' @param shapeName The filename for your resulting shapefile
+#' @param returnShape Boolean indicating if route shape should be returned
+#'
+#' @return Returns stops shape as SpatialPointsDataFrame if desired
+#' @export
+exportStopShape = function(feedPath,outPath,shapeName,returnShape=FALSE){
+  stops = read.csv(paste0(feedPath,"/stops.txt"),stringsAsFactors = FALSE)
+  sp::coordinates(stops)=~stop_lon+stop_lat
+  stops@proj4string= CRS("+init=epsg:4326")
+
+  rgdal::writeOGR(stops,outPath,shapeName,overwrite_layer = TRUE,driver = "ESRI Shapefile")
+
+  if(returnShape==TRUE){
+    return(stops)
+  }
+
 }
 

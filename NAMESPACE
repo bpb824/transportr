@@ -2,9 +2,10 @@
 
 export(decodeLineR)
 export(exportRouteShape)
+export(exportStopShape)
 export(fetchFeed)
 export(getGoogleDirections)
 export(list2frame)
 export(naturalBreaks)
 export(route2shape)
-export(spatialTransitShapes)
+export(travel_time)

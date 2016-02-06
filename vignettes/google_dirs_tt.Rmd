@@ -1,0 +1,31 @@
+---
+title: "Querying Routes and Travel Times from the Google Directions API"
+author: "Bryan Blanc"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Vignette Title}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+This vignette demonstrates how to use R and wrapper functions in `transportr` to access information from various mapping-related Google APIs. 
+
+## Querying Routes from the Google Directions APIs
+
+## Plotting Routes or Exporting them to a Shapefile
+
+## Querying Travel Times
+We can obtain travel times from the Google Directions API using the `travel_time()` function. There are several parameters you'll need to prepare before using the function:
+
+- **Required**
+    + **Origin**: The location of the start of the trip you'd like to request a travel time for.
+    + **Destination**: The location of the end of the trip you'd like to request a travel time for.
+    + **API Key**: The Google API key you'll need to access Google APIs. 
+    + **Mode**: The mode you'd like to request a travel time for; can be 'driving', 'walking', 'bicycling', or 'transit'
+- **Optional**
+    + **Departure Time**: The time of departure for the trip you would like to request a travel time for. You cannot specify both departure and arrival times.
+    + **Arrival Time**: The time of arrival for the trip you would like to request a travel time for. You cannot specify both departure and arrival times.
+    
+If multiple routes are proposed by Google, you can select the travel time for the fastest, the shortest distance, or average the travel times for the proposed routes. 
+
