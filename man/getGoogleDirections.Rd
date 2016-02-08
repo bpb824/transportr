@@ -14,7 +14,7 @@ getGoogleDirections(from, to, key, mode, departure = NULL, arrival = NULL,
 
 \item{key}{API key for Google Directions API (from Google Developers Console)}
 
-\item{mode}{Travel mode: one of four strings: 'driving', 'walking', 'biking', 'transit'}
+\item{mode}{Travel mode: one of four strings: 'driving', 'walking', 'bicycling', 'transit'}
 
 \item{departure}{Optional departure time of POSIXct class. Cannot specify both arrival and departure times.}
 

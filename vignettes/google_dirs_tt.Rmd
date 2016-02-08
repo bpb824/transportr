@@ -11,12 +11,23 @@ vignette: >
 
 This vignette demonstrates how to use R and wrapper functions in `transportr` to access information from various mapping-related Google APIs. 
 
+## Setup
+Load neccessary packages
+```{r}
+require(transportr)
+require(ggmap)
+require(ggplot2)
+require(dplyr)
+
+```
+
+
 ## Querying Routes from the Google Directions APIs
 
 ## Plotting Routes or Exporting them to a Shapefile
 
 ## Querying Travel Times
-We can obtain travel times from the Google Directions API using the `travel_time()` function. There are several parameters you'll need to prepare before using the function:
+We can obtain travel times from the Google Directions API using `transportr`'s `travel_time()` function. There are several parameters you'll need to prepare before using the function:
 
 - **Required**
     + **Origin**: The location of the start of the trip you'd like to request a travel time for.
@@ -26,6 +37,166 @@ We can obtain travel times from the Google Directions API using the `travel_time
 - **Optional**
     + **Departure Time**: The time of departure for the trip you would like to request a travel time for. You cannot specify both departure and arrival times.
     + **Arrival Time**: The time of arrival for the trip you would like to request a travel time for. You cannot specify both departure and arrival times.
+    +**Type of Travel Time**: Do you want the travel time for the fastest route, the shortest route, the route with minimum transfers (only applies to transit), or the average travel time? Input 'average', 'shortest', 'fastest', 'minimize transfers'; default is 'fastest'. 
     
 If multiple routes are proposed by Google, you can select the travel time for the fastest, the shortest distance, or average the travel times for the proposed routes. 
+
+### Examples
+
+Here are a couple computations of travel times for various configurations of the function:
+
+#### Nelson\Nygaard PDX to Hair of the Dog Brewery
+We're going to employ `transportr`'s `geocode_place` function (which makes use of the Google Places API) to quickly identify the locations of places like NN PDX and Hair of the Dog. We'll use a departure time of tomorrow 5:00 PM (17:00). We'll also use `ggmap` to quickly visualize the routes available for a sniff test of the data.
+
+```{r}
+gKey = "AIzaSyAvxp8VHw_gJ7bzV7Xn7OkULBJZ3uWF7hs" #Bryan's Google API Key; get your own @ <>
+nn_pdx = geocode_place("Nelson Nygaard Portland")
+hotd = geocode_place("Hair of the Dog Portland")
+
+tt = travel_time(from=nn_pdx,to=hotd,key = gKey,
+            departure = as.POSIXct(paste0(Sys.Date()+1," 17:00")),
+            mode = "bicycling")
+
+dirs = getGoogleDirections(from=nn_pdx,to=hotd,key = gKey,
+            departure = as.POSIXct(paste0(Sys.Date()+1," 17:00")),
+            mode = "bicycling",alternatives = TRUE)
+
+routeShape = gDirsToShape(dirs,mode="bicycling")
+
+route_fort = fortify(routeShape) %>% 
+  left_join(routeShape@data %>%
+              mutate(id=as.character(1:nrow(routeShape@data)-1),route_id = as.character(route_id)) %>%
+  group_by(route_id) %>% mutate(totalDuration=sum(duration_min)),
+  by="id") 
+
+box = make_bbox(route_fort$long,route_fort$lat,f=1)
+
+base_map = get_map(location=box,
+                    source = "google", maptype="roadmap",crop = TRUE)
+
+ggmap(base_map) +
+  geom_path(data=route_fort,
+            aes(x=long,y=lat,group=group,color = totalDuration),size = 1.5,alpha=0.7)+
+  guides(color=guide_legend("Travel Time"))+
+  coord_map()+
+  scale_color_distiller(palette="RdYlGn")+
+  theme(axis.line = element_line(color = NA),axis.text = element_blank (),
+        axis.title = element_blank (),
+        axis.ticks = element_blank ()) +
+  xlab("") + ylab("")
+
+
+print(tt)
+```
+
+#### Hair of the Dog to Produce Row
+```{r}
+produce_row = geocode_place("Produce Row Portland")
+
+tt = travel_time(from=hotd,to=produce_row,key = gKey,
+            departure = as.POSIXct(paste0(Sys.Date()+1," 18:30")),
+            mode = "walking")
+
+dirs = getGoogleDirections(from=hotd,to=produce_row,key = gKey,
+            departure = as.POSIXct(paste0(Sys.Date()+1," 18:30")),
+            mode = "walking",alternatives = TRUE)
+
+routeShape = gDirsToShape(dirs,mode="walking")
+
+route_fort = fortify(routeShape) %>% 
+  left_join(routeShape@data %>%
+              mutate(id=as.character(1:nrow(routeShape@data)-1),route_id = as.character(route_id)) %>%
+  group_by(route_id) %>% mutate(totalDuration=sum(duration_min)),
+  by="id") 
+
+box = make_bbox(route_fort$long,route_fort$lat,f=1)
+
+base_map = get_map(location=box,
+                    source = "google", maptype="roadmap",crop = TRUE)
+
+ggmap(base_map) +
+  geom_path(data=route_fort,
+            aes(x=long,y=lat,group=group,color = totalDuration),size = 1.5,alpha=0.7)+
+  guides(color=guide_legend("Travel Time"))+
+  coord_map()+
+  scale_color_distiller(palette="RdYlGn")+
+  theme(axis.line = element_line(color = NA),axis.text = element_blank (),
+        axis.title = element_blank (),
+        axis.ticks = element_blank ()) +
+  xlab("") + ylab("")
+
+print(tt)
+```
+
+#### Produce Row to St. Johns
+```{r}
+st_johns = geocode_place("St Johns Portland Oregon")
+
+tt = travel_time(from=produce_row,to=st_johns,key = gKey,
+            departure = as.POSIXct(paste0(Sys.Date()+1," 20:00")),
+            mode = "transit")
+dirs = getGoogleDirections(from=produce_row,to=st_johns,key = gKey,
+            departure = as.POSIXct(paste0(Sys.Date()+1," 20:00")),
+            mode = "transit")
+routeShape = gDirsToShape(dirs,mode="transit")
+
+route_fort = fortify(routeShape,region="step_id") %>% left_join(routeShape@data %>%
+                                                                   rename(id=step_id) %>%
+                                                                   mutate(id=as.character(id-1)),by="id")
+box = make_bbox(route_fort$long,route_fort$lat,f=.5)
+
+base_map = get_map(location=box,
+                    source = "google", maptype="roadmap",crop = FALSE)
+
+ggmap(base_map) +
+  geom_path(data=route_fort,
+            aes(x=long,y=lat,group=group,color=description),size = 1.5,alpha=0.8)+
+  guides(color=guide_legend("Description"))+
+  coord_map()+
+  theme(axis.line = element_line(color = NA),axis.text = element_blank (),
+        axis.title = element_blank (),
+        axis.ticks = element_blank ()) +
+  xlab("") + ylab("")
+```
+
+#### St. Johns to Multnomah Falls
+```{r}
+falls = geocode_place("Multnomah Falls Oregon")
+
+tt = travel_time(from=st_johns,to=falls,key = gKey,
+            departure = as.POSIXct(paste0(Sys.Date()+2," 9:00")),
+            mode = "driving")
+
+dirs = getGoogleDirections(from=st_johns,to=falls,key = gKey,
+            departure = as.POSIXct(paste0(Sys.Date()+2," 9:00")),
+            mode = "driving",alternatives = TRUE)
+
+routeShape = gDirsToShape(dirs,mode="driving")
+
+route_fort = fortify(routeShape) %>% 
+  left_join(routeShape@data %>%
+              mutate(id=as.character(1:nrow(routeShape@data)),route_id = as.character(route_id)) %>%
+  group_by(route_id) %>% mutate(totalDuration=sum(duration_min)),
+  by="id") 
+
+box = make_bbox(route_fort$long,route_fort$lat,f=2)
+
+base_map = get_map(location=box,
+                    source = "google", maptype="roadmap",crop = TRUE)
+
+ggmap(base_map) +
+  geom_path(data=route_fort,
+            aes(x=long,y=lat,group=group,color = totalDuration),size = 1.5,alpha=0.7)+
+  guides(color=guide_legend("Travel Time"))+
+  coord_map()+
+  scale_color_distiller(palette="RdYlGn")+
+  theme(axis.line = element_line(color = NA),axis.text = element_blank (),
+        axis.title = element_blank (),
+        axis.ticks = element_blank ()) +
+  xlab("") + ylab("")
+
+print(tt)
+
+```
+
 

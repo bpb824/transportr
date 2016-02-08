@@ -3,7 +3,7 @@
 #' @param from Start location to fetch directions for (vector in [Lat Lng] format)
 #' @param to End location to fetch directions for (vector in [Lat Lng] format)
 #' @param key API key for Google Directions API (from Google Developers Console)
-#' @param mode Travel mode: one of four strings: 'driving', 'walking', 'biking', 'transit'
+#' @param mode Travel mode: one of four strings: 'driving', 'walking', 'bicycling', 'transit'
 #' @param departure Optional departure time of POSIXct class. Cannot specify both arrival and departure times.
 #' @param arrival Optional arrival time of POSIXct class. Cannot specify both arrival and departure times.
 #'
@@ -38,6 +38,146 @@ getGoogleDirections <- function(from, to, key, mode, departure=NULL, arrival=NUL
   return(rjson::fromJSON(paste(readLines(url), collapse="")))
 }
 
+#' Convert Google directions to Spatial Object
+#'
+#' @param googleDirs List of resuls from `getGoogleDirections()` function
+#' @param mode Transportation mode of directions ('driving','walking','bicycling','transit')
+#'
+#' @return SpatialLinesDataFrame object representing Google directed routes
+#'
+#' @export
+gDirsToShape= function(googleDirs,mode){
+
+  src <- '
+  std::string encoded = as<std::string>(a);
+
+  int index = 0;
+  int len = encoded.size();
+  int df_index = 0;
+  long double lat = 0;
+  long double lng = 0;
+  std::vector<long double> longitude(0);
+  std::vector<long double> latitude(0);
+
+  if(encoded.size() == 0)
+  return R_NilValue;
+
+  longitude.reserve(30000);
+  latitude.reserve(30000);
+
+  while(index < len) {
+  int b;
+  int shift = 0;
+  int result = 0;
+
+  do {
+  b = encoded[index++] - 63;
+  result |= (b & 0x1f) << shift;
+  shift += 5;
+  } while(b >= 0x20);
+  long double dlat = ((result & 1) ? ~(result >> 1) : (result >> 1));
+  lat += dlat;
+  latitude.push_back(lat * 1e-5);
+
+  shift = 0;
+  result = 0;
+  do {
+  b = encoded[index++] - 63;
+  result |= (b & 0x1f) << shift;
+  shift += 5;
+  } while(b >= 0x20);
+  long double dlng = ((result & 1) ? ~(result >> 1) : (result >> 1));
+  lng += dlng;
+  longitude.push_back(lng * 1e-5);
+  df_index++;
+  }
+
+  return DataFrame::create( _["lat"] = latitude,  _["lng"] = longitude );
+  '
+
+
+  if (require("Rcpp") & require("inline")){
+    DecodeLine <- cxxfunction(signature(a = "character"),
+                              src, plugin = "Rcpp")
+  } else {
+    DecodeLine <- decodeLineR
+  }
+
+  routes = googleDirs$routes
+  routeList = list()
+  idCount = 0
+
+  if(mode=="transit"){
+    for(i in 1:length(routes)){
+      route = routes[[i]]
+      leg = route$legs[[1]]
+      steps = leg$steps
+      lineList = list()
+      route_data = data.frame(matrix(nrow=length(steps),ncol =6))
+      colnames(route_data)=c("step_id","distance_mi","duration_min","description","transit_details",
+                             "route_id")
+      route_data$route_id=i
+      rownames(route_data)=as.character(idCount:(idCount+nrow(route_data)-1))
+      for(j in 1:length(steps)){
+        step = steps[[j]]
+        poly = DecodeLine(step$polyline$points)
+        polyLine = sp::Lines(sp::Line(cbind(poly$lng,poly$lat)),idCount)
+        lineList[[j]]=polyLine
+        route_data$step_id[j]=j
+        route_data$distance_mi[j]=step$distance$value*0.000621371
+        route_data$duration_min[j]=step$duration$value/60
+        route_data$description[j]=step$html_instructions
+        if("transit_details" %in% names(step)){
+          route_data$transit_details[j]=paste0(step$transit_details$line$short_name," (",
+                                               step$transit_details$line$name,")")
+        }else{
+          route_data$transit_details[j]=NA
+        }
+
+        idCount= idCount+1
+      }
+      polyShape = sp::SpatialLines(lineList,sp::CRS("+init=epsg:4326"))
+      polyShapeDF = sp::SpatialLinesDataFrame(polyShape,route_data,match.ID = FALSE)
+      routeList[[i]]=polyShapeDF
+    }
+  }else{
+    for(i in 1:length(routes)){
+      route = routes[[i]]
+      leg = route$legs[[1]]
+      steps = leg$steps
+      lineList = list()
+      route_data = data.frame(matrix(nrow=length(steps),ncol =5))
+      colnames(route_data)=c("step_id","distance_mi","duration_min","description","route_id")
+      route_data$route_id=i
+      rownames(route_data)=as.character(idCount:(idCount+nrow(route_data)-1))
+      for(j in 1:length(steps)){
+        step = steps[[j]]
+        poly = DecodeLine(step$polyline$points)
+        polyLine = sp::Lines(sp::Line(cbind(poly$lng,poly$lat)),idCount)
+        lineList[[j]]=polyLine
+        route_data$step_id[j]=j
+        route_data$distance_mi[j]=step$distance$value*0.000621371
+        route_data$duration_min[j]=step$duration$value/60
+        route_data$description[j]=step$html_instructions
+        idCount= idCount+1
+      }
+      polyShape = sp::SpatialLines(lineList,sp::CRS("+init=epsg:4326"))
+      polyShapeDF = sp::SpatialLinesDataFrame(polyShape,route_data,match.ID = TRUE)
+      routeList[[i]]=polyShapeDF
+    }
+  }
+
+  routeShape = routeList[[1]]
+  if(length(routeList)>1){
+    for(i in 2:length(routeList)){
+      routeShape = maptools::spRbind(routeShape,routeList[[i]])
+    }
+  }
+
+  return(routeShape)
+
+}
+
 
 #' Query travel times from Google API
 #'
@@ -49,33 +189,78 @@ getGoogleDirections <- function(from, to, key, mode, departure=NULL, arrival=NUL
 #' @param arrival Optional arrival time of POSIXct class. Cannot specify both arrival and departure times.
 #'
 #' @return Travel time (minutes)
+#'
 #' @export
-travel_time= function(from,to,key,mode,departure = NULL, arrival = NULL){
+travel_time = function(from,to,key,mode,departure = NULL, arrival = NULL,tt_type="fastest"){
 
   if(!is.null(departure) & !is.null(arrival)){
     stop("Cannot specify both departure and arrival times.")
   }
 
-  if(!is.null(departure)){
-    dirs =  getGoogleDirections(from,to,gKey,mode,departure = departure)
-  }else if(!is.null(arrival)){
-    dirs =  getGoogleDirections(from,to,gKey,mode,arrival = arrival)
-  }
-
-  if(dirs$status=="OK"){
-    numRoutes = length(dirs$routes)
-    print(paste0(numRoutes," routes returned successfully."))
-    if(numRoutes>1){
-      timeVector = vector()
-      for(i in 1:numRoutes){
-        timeVector[i] = dirs$routes[[i]]$legs[[1]]$duration$value/60
-      }
-      time = mean(timeVector)
-    }else{
-      time = dirs$routes[[i]]$legs[[1]]$duration$value/60
+  if(tt_type=="fastest"){
+    if(!is.null(departure)){
+      dirs =  getGoogleDirections(from,to,gKey,mode,departure = departure)
+    }else if(!is.null(arrival)){
+      dirs =  getGoogleDirections(from,to,gKey,mode,arrival = arrival)
     }
-  }else{
-    stop("API returned no results. Check you inputs")
+
+    if(dirs$status=="OK"){
+      numRoutes = length(dirs$routes)
+      print(paste0(numRoutes," routes returned successfully."))
+      if(numRoutes>1){
+        timeVector = vector()
+        for(i in 1:numRoutes){
+          timeVector[i] = dirs$routes[[i]]$legs[[1]]$duration$value/60
+        }
+        return(mean(timeVector))
+      }else{
+        return(dirs$routes[[1]]$legs[[1]]$duration$value/60)
+      }
+    }else{
+      stop("API returned no results. Check you inputs")
+    }
+  }else if(tt_type=="average"){
+    if(!is.null(departure)){
+      dirs =  getGoogleDirections(from,to,gKey,mode,departure = departure,alternatives = TRUE)
+    }else if(!is.null(arrival)){
+      dirs =  getGoogleDirections(from,to,gKey,mode,arrival = arrival,alternatives = TRUE)
+    }
+
+    if(dirs$status=="OK"){
+      numRoutes = length(dirs$routes)
+      print(paste0(numRoutes," routes returned successfully."))
+      if(numRoutes>1){
+        timeVector = vector()
+        for(i in 1:numRoutes){
+          timeVector[i] = dirs$routes[[i]]$legs[[1]]$duration$value/60
+        }
+        return(mean(timeVector))
+      }else{
+        return(dirs$routes[[1]]$legs[[1]]$duration$value/60)
+      }
+    }else{
+      stop("API returned no results. Check your inputs")
+    }
+  }
+}
+
+#' Geocode a place name using Google Places API
+#'
+#' @param placeString A string describing the place you'd like to geocode
+#' @param output  The output can either be a simple location ('loc') or a list with all response results ('all')
+#'
+#' @return Location or list of API results
+#' @export
+geocode_place= function(placeString,output="loc"){
+
+  place = gsub(" ","+",placeString)
+  base_url = "https://maps.googleapis.com/maps/api/place/textsearch/json?query="
+  query = paste0(base_url,place,"&key=",gKey)
+  response = httr::content(httr::GET(query),as = "parsed", type ="application/json")
+  if(output=="loc"){
+    return(unlist(response$results[[1]]$geometry$location))
+  }else if(output=="all"){
+    return(response)
   }
 }
 

@@ -4,7 +4,8 @@
 \alias{travel_time}
 \title{Query travel times from Google API}
 \usage{
-travel_time(from, to, key, mode, departure = NULL, arrival = NULL)
+travel_time(from, to, key, mode, departure = NULL, arrival = NULL,
+  tt_type = "fastest")
 }
 \arguments{
 \item{from}{Start location to fetch directions for (vector in [Lat Lng] format)}
