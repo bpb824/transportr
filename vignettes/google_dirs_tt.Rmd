@@ -13,7 +13,7 @@ This vignette demonstrates how to use R and wrapper functions in `transportr` to
 
 ## Setup
 Load neccessary packages
-```{r}
+```{r,warning=FALSE,message=FALSE}
 require(transportr)
 require(ggmap)
 require(ggplot2)
@@ -23,11 +23,31 @@ require(dplyr)
 
 
 ## Querying Routes from the Google Directions APIs
+`transportr` makes it easy to query directions for a given origin and destination (and other parameters) from the Google Directions API using R. 
+
+Similarly, there are several parameters you'll need to prepare before using the function:
+
+- **Required**
+    + **Origin**: The location of the start of the trip you'd like to request a travel time for.
+    + **Destination**: The location of the end of the trip you'd like to request a travel time for.
+    + **API Key**: The Google API key you'll need to access Google APIs. 
+    + **Mode**: The mode you'd like to request a travel time for; can be 'driving', 'walking', 'bicycling', or 'transit'
+- **Optional**
+    + **Departure Time**: The time of departure for the trip you would like to request a travel time for. You cannot specify both departure and arrival times.
+    + **Arrival Time**: The time of arrival for the trip you would like to request a travel time for. You cannot specify both departure and arrival times.
+    +**Type of Travel Time**: Do you want the travel time for the fastest route, the shortest route, the route with minimum transfers (only applies to transit), or the average travel time? Input 'average', 'shortest', 'fastest', 'minimize transfers'; default is 'fastest'. 
+    
+```{r}
+
+
+
+```
+
 
 ## Plotting Routes or Exporting them to a Shapefile
 
 ## Querying Travel Times
-We can obtain travel times from the Google Directions API using `transportr`'s `travel_time()` function. There are several parameters you'll need to prepare before using the function:
+We can obtain travel times from the Google Directions API using `transportr`'s `travel_time()` function. The `travel_time` function is a wrapper for the the `getGoogleDirections()` function discussed above. Similarly, there are several parameters you'll need to prepare before using the function:
 
 - **Required**
     + **Origin**: The location of the start of the trip you'd like to request a travel time for.
@@ -45,18 +65,26 @@ If multiple routes are proposed by Google, you can select the travel time for th
 
 Here are a couple computations of travel times for various configurations of the function:
 
-#### Nelson\Nygaard PDX to Hair of the Dog Brewery
+#### Nelson\\Nygaard PDX to Hair of the Dog Brewery
 We're going to employ `transportr`'s `geocode_place` function (which makes use of the Google Places API) to quickly identify the locations of places like NN PDX and Hair of the Dog. We'll use a departure time of tomorrow 5:00 PM (17:00). We'll also use `ggmap` to quickly visualize the routes available for a sniff test of the data.
 
-```{r}
-gKey = "AIzaSyAvxp8VHw_gJ7bzV7Xn7OkULBJZ3uWF7hs" #Bryan's Google API Key; get your own @ <>
+```{r,fig.width=7, fig.height=4}
+#Bryan's Google API Key; get your own @ <>
+gKey = "AIzaSyAvxp8VHw_gJ7bzV7Xn7OkULBJZ3uWF7hs" 
+#Location of Nelson\Nygaard Portland Office
 nn_pdx = geocode_place("Nelson Nygaard Portland")
+#Location of Hair of the Dog Brewery
 hotd = geocode_place("Hair of the Dog Portland")
 
+#Travel time computation
 tt = travel_time(from=nn_pdx,to=hotd,key = gKey,
             departure = as.POSIXct(paste0(Sys.Date()+1," 17:00")),
             mode = "bicycling")
 
+print(tt)
+
+#OPTIONAL
+#Fetch directions for mapping
 dirs = getGoogleDirections(from=nn_pdx,to=hotd,key = gKey,
             departure = as.POSIXct(paste0(Sys.Date()+1," 17:00")),
             mode = "bicycling",alternatives = TRUE)
@@ -84,19 +112,20 @@ ggmap(base_map) +
         axis.title = element_blank (),
         axis.ticks = element_blank ()) +
   xlab("") + ylab("")
-
-
-print(tt)
 ```
 
 #### Hair of the Dog to Produce Row
-```{r}
+```{r,fig.width=7, fig.height=4}
+#Location of Produce Row Cafe (Portland, OR)
 produce_row = geocode_place("Produce Row Portland")
 
+#Travel time computation
 tt = travel_time(from=hotd,to=produce_row,key = gKey,
             departure = as.POSIXct(paste0(Sys.Date()+1," 18:30")),
             mode = "walking")
 
+#OPTIONAL
+#Fetch directions for mapping
 dirs = getGoogleDirections(from=hotd,to=produce_row,key = gKey,
             departure = as.POSIXct(paste0(Sys.Date()+1," 18:30")),
             mode = "walking",alternatives = TRUE)
@@ -129,12 +158,17 @@ print(tt)
 ```
 
 #### Produce Row to St. Johns
-```{r}
+```{r,fig.width=7, fig.height=4}
+#Location of St. Johns neighborhood (Portland, OR)
 st_johns = geocode_place("St Johns Portland Oregon")
 
+#Travel time computation
 tt = travel_time(from=produce_row,to=st_johns,key = gKey,
             departure = as.POSIXct(paste0(Sys.Date()+1," 20:00")),
             mode = "transit")
+
+#OPTIONAL
+#Fetch directions for mapping
 dirs = getGoogleDirections(from=produce_row,to=st_johns,key = gKey,
             departure = as.POSIXct(paste0(Sys.Date()+1," 20:00")),
             mode = "transit")
@@ -160,13 +194,17 @@ ggmap(base_map) +
 ```
 
 #### St. Johns to Multnomah Falls
-```{r}
+```{r,fig.width=7, fig.height=4}
+#Location of Multnomah Falls in Columbia River Gorge (Oregon)
 falls = geocode_place("Multnomah Falls Oregon")
 
+#Travel time computation
 tt = travel_time(from=st_johns,to=falls,key = gKey,
             departure = as.POSIXct(paste0(Sys.Date()+2," 9:00")),
             mode = "driving")
 
+#OPTIONAL
+#Fetch directions for mapping
 dirs = getGoogleDirections(from=st_johns,to=falls,key = gKey,
             departure = as.POSIXct(paste0(Sys.Date()+2," 9:00")),
             mode = "driving",alternatives = TRUE)

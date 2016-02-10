@@ -6,36 +6,71 @@
 #' @param mode Travel mode: one of four strings: 'driving', 'walking', 'bicycling', 'transit'
 #' @param departure Optional departure time of POSIXct class. Cannot specify both arrival and departure times.
 #' @param arrival Optional arrival time of POSIXct class. Cannot specify both arrival and departure times.
+#' @param waypoints Optional additional locations to travel through along route. A data frame or with 'lat' and 'lng' columns, and an observation for each destination.
 #'
 #' @return Encoded google directions string
 #' @export
-getGoogleDirections <- function(from, to, key, mode, departure=NULL, arrival=NULL,alternatives=FALSE) {
+getGoogleDirections <- function(from, to, key, mode, departure=NULL, arrival=NULL,
+                                alternatives=FALSE, waypoints = NULL) {
 
   if(!is.null(departure) & !is.null(arrival)){
     stop("Cannot specify both departure and arrival times.")
   }
 
-  to = paste0(to,collapse = ",")
-  from = paste0(from,collapse=",")
+  if(is.null(waypoints)){
+    to = paste0(to,collapse = ",")
+    from = paste0(from,collapse=",")
 
-  if(!is.null(departure)){
-    time = as.numeric(departure)
-    baseurl <- "https://maps.googleapis.com/maps/api/directions/json?origin="
-    url = paste0(baseurl,from,"&destination=",to,"&mode=",mode,"&key=",key,"&departure_time=",time)
-  }else if(!is.null(arrival)){
-    time = as.numeric(arrival)
-    baseurl <- "https://maps.googleapis.com/maps/api/directions/json?origin="
-    url = paste0(baseurl,from,"&destination=",to,"&mode=",mode,"&key=",key,"&arrival_time=",time)
+    if(!is.null(departure)){
+      time = as.numeric(departure)
+      baseurl <- "https://maps.googleapis.com/maps/api/directions/json?origin="
+      url = paste0(baseurl,from,"&destination=",to,"&mode=",mode,"&key=",key,"&departure_time=",time)
+    }else if(!is.null(arrival)){
+      time = as.numeric(arrival)
+      baseurl <- "https://maps.googleapis.com/maps/api/directions/json?origin="
+      url = paste0(baseurl,from,"&destination=",to,"&mode=",mode,"&key=",key,"&arrival_time=",time)
+    }else{
+      baseurl <- "https://maps.googleapis.com/maps/api/directions/json?origin="
+      url = paste0(baseurl,from,"&destination=",to,"&mode=",mode,"&key=",key)
+    }
+
+    if(alternatives){
+      url = paste0(url,"&alternatives=true")
+    }
+
+    return(rjson::fromJSON(paste(readLines(url), collapse="")))
   }else{
-    baseurl <- "https://maps.googleapis.com/maps/api/directions/json?origin="
-    url = paste0(baseurl,from,"&destination=",to,"&mode=",mode,"&key=",key)
+
+    to = paste0(to,collapse = ",")
+    from = paste0(from,collapse=",")
+
+    way_string = paste0("&via=",waypoints$lat[1],",",waypoints$lng[1])
+    for(i in 1:length(waypoints)){
+      way_string = paste0(way_string,"|",waypoints$lat[i],",",waypoints$lng[i])
+    }
+
+    if(!is.null(departure)){
+      time = as.numeric(departure)
+      baseurl <- "https://maps.googleapis.com/maps/api/directions/json?origin="
+      url = paste0(baseurl,from,"&destination=",to,way_string,"&mode=",mode,"&key=",key,"&departure_time=",time)
+    }else if(!is.null(arrival)){
+      time = as.numeric(arrival)
+      baseurl <- "https://maps.googleapis.com/maps/api/directions/json?origin="
+      url = paste0(baseurl,from,"&destination=",to,way_string,"&mode=",mode,"&key=",key,"&arrival_time=",time)
+    }else{
+      baseurl <- "https://maps.googleapis.com/maps/api/directions/json?origin="
+      url = paste0(baseurl,from,"&destination=",to,way_string,"&mode=",mode,"&key=",key)
+    }
+
+    if(alternatives){
+      url = paste0(url,"&alternatives=true")
+    }
+
+    return(rjson::fromJSON(paste(readLines(url), collapse="")))
+
   }
 
-  if(alternatives){
-    url = paste0(url,"&alternatives=true")
-  }
 
-  return(rjson::fromJSON(paste(readLines(url), collapse="")))
 }
 
 #' Convert Google directions to Spatial Object
@@ -251,11 +286,11 @@ travel_time = function(from,to,key,mode,departure = NULL, arrival = NULL,tt_type
 #'
 #' @return Location or list of API results
 #' @export
-geocode_place= function(placeString,output="loc"){
+geocode_place= function(placeString,key,output="loc"){
 
   place = gsub(" ","+",placeString)
   base_url = "https://maps.googleapis.com/maps/api/place/textsearch/json?query="
-  query = paste0(base_url,place,"&key=",gKey)
+  query = paste0(base_url,place,"&key=",key)
   response = httr::content(httr::GET(query),as = "parsed", type ="application/json")
   if(output=="loc"){
     return(unlist(response$results[[1]]$geometry$location))

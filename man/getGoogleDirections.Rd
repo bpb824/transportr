@@ -5,7 +5,7 @@
 \title{Fetch Google directions from Directions API}
 \usage{
 getGoogleDirections(from, to, key, mode, departure = NULL, arrival = NULL,
-  alternatives = FALSE)
+  alternatives = FALSE, waypoints = NULL)
 }
 \arguments{
 \item{from}{Start location to fetch directions for (vector in [Lat Lng] format)}
@@ -19,6 +19,8 @@ getGoogleDirections(from, to, key, mode, departure = NULL, arrival = NULL,
 \item{departure}{Optional departure time of POSIXct class. Cannot specify both arrival and departure times.}
 
 \item{arrival}{Optional arrival time of POSIXct class. Cannot specify both arrival and departure times.}
+
+\item{waypoints}{Optional additional locations to travel through along route. A data frame or with 'lat' and 'lng' columns, and an observation for each destination.}
 }
 \value{
 Encoded google directions string

@@ -4,7 +4,7 @@
 \alias{geocode_place}
 \title{Geocode a place name using Google Places API}
 \usage{
-geocode_place(placeString, output = "loc")
+geocode_place(placeString, key, output = "loc")
 }
 \arguments{
 \item{placeString}{A string describing the place you'd like to geocode}
