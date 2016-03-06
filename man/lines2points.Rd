@@ -4,14 +4,12 @@
 \alias{lines2points}
 \title{Convert SpatialLines to coordinate data frame for map matching.}
 \usage{
-lines2points(linesShape, trip_id, dummyDate)
+lines2points(linesShape, trip_id)
 }
 \arguments{
 \item{linesShape}{SpatialLines shape containing trip to convert to points}
 
 \item{trip_id}{ID of trip to convert to points}
-
-\item{dummyDate}{Date/time string to use for dummy timestamp in YYYY-MM-DD HH:MM:SS format.}
 }
 \value{
 Coordinate data frame to save as .csv for map matching.

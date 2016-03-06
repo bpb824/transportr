@@ -155,13 +155,15 @@ gDirsToShape= function(googleDirs,mode){
       rownames(route_data)=as.character(idCount:(idCount+nrow(route_data)-1))
       for(j in 1:length(steps)){
         step = steps[[j]]
-        poly = DecodeLine(step$polyline$points)
+        line_string = step$polyline$points
+        poly = DecodeLine(line_string)
         polyLine = sp::Lines(sp::Line(cbind(poly$lng,poly$lat)),idCount)
         lineList[[j]]=polyLine
         route_data$step_id[j]=j
         route_data$distance_mi[j]=step$distance$value*0.000621371
         route_data$duration_min[j]=step$duration$value/60
         route_data$description[j]=step$html_instructions
+        route_data$link_code[j] = line_string
         if("transit_details" %in% names(step)){
           route_data$transit_details[j]=paste0(step$transit_details$line$short_name," (",
                                                step$transit_details$line$name,")")
@@ -187,13 +189,15 @@ gDirsToShape= function(googleDirs,mode){
       rownames(route_data)=as.character(idCount:(idCount+nrow(route_data)-1))
       for(j in 1:length(steps)){
         step = steps[[j]]
-        poly = DecodeLine(step$polyline$points)
+        line_string = step$polyline$points
+        poly = DecodeLine(line_string)
         polyLine = sp::Lines(sp::Line(cbind(poly$lng,poly$lat)),idCount)
         lineList[[j]]=polyLine
         route_data$step_id[j]=j
         route_data$distance_mi[j]=step$distance$value*0.000621371
         route_data$duration_min[j]=step$duration$value/60
         route_data$description[j]=step$html_instructions
+        route_data$link_code[j] = line_string
         idCount= idCount+1
       }
       polyShape = sp::SpatialLines(lineList,sp::CRS("+init=epsg:4326"))
@@ -305,11 +309,10 @@ geocode_place= function(placeString,key,output="loc"){
 #'
 #' @param linesShape SpatialLines shape containing trip to convert to points
 #' @param trip_id ID of trip to convert to points
-#' @param dummyDate Date/time string to use for dummy timestamp in YYYY-MM-DD HH:MM:SS format.
 #'
 #' @return Coordinate data frame to save as .csv for map matching.
 #'
-lines2points = function(linesShape,trip_id, dummyDate){
+lines2points = function(linesShape,trip_id){
 
   numCoords = 0
   for (i in 1:length(linesShape)){
@@ -320,7 +323,7 @@ lines2points = function(linesShape,trip_id, dummyDate){
   colnames(crds)=c("id","trip_id","time","lat","long","alt","speed","hAcc","vAcc")
   crds$id = rownames(crds)
   crds$trip_id=trip_id
-  startTime = as.POSIXct(strptime("2015-03-14  09:26:53",tz="America/Los_Angeles",format = "%Y-%m-%d %H:%M:%S"))
+  startTime = as.POSIXct(Sys.time())
   endTime = startTime +(numCoords-1)*2
   timeVector = timeDate::timeSequence(startTime,endTime,by="2 sec",FinCenter = "America/Los_Angeles")
   crds$time=as.character(timeVector)

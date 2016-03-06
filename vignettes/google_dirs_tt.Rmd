@@ -18,6 +18,7 @@ require(transportr)
 require(ggmap)
 require(ggplot2)
 require(dplyr)
+require(ggrepel)
 
 ```
 
@@ -36,13 +37,6 @@ Similarly, there are several parameters you'll need to prepare before using the 
     + **Departure Time**: The time of departure for the trip you would like to request a travel time for. You cannot specify both departure and arrival times.
     + **Arrival Time**: The time of arrival for the trip you would like to request a travel time for. You cannot specify both departure and arrival times.
     +**Type of Travel Time**: Do you want the travel time for the fastest route, the shortest route, the route with minimum transfers (only applies to transit), or the average travel time? Input 'average', 'shortest', 'fastest', 'minimize transfers'; default is 'fastest'. 
-    
-```{r}
-
-
-
-```
-
 
 ## Plotting Routes or Exporting them to a Shapefile
 
@@ -68,13 +62,18 @@ Here are a couple computations of travel times for various configurations of the
 #### Nelson\\Nygaard PDX to Hair of the Dog Brewery
 We're going to employ `transportr`'s `geocode_place` function (which makes use of the Google Places API) to quickly identify the locations of places like NN PDX and Hair of the Dog. We'll use a departure time of tomorrow 5:00 PM (17:00). We'll also use `ggmap` to quickly visualize the routes available for a sniff test of the data.
 
-```{r,fig.width=7, fig.height=4}
+```{r,fig.width=7, fig.height=4,warning=FALSE,message=FALSE}
 #Bryan's Google API Key; get your own @ <>
 gKey = "AIzaSyAvxp8VHw_gJ7bzV7Xn7OkULBJZ3uWF7hs" 
 #Location of Nelson\Nygaard Portland Office
-nn_pdx = geocode_place("Nelson Nygaard Portland")
+nn_pdx = geocode_place("Nelson Nygaard Portland",key = gKey)
 #Location of Hair of the Dog Brewery
-hotd = geocode_place("Hair of the Dog Portland")
+hotd = geocode_place("Hair of the Dog Portland",key = gKey)
+
+placeFrame = data.frame(matrix(nrow=2,ncol=3))
+colnames(placeFrame)=c("place","lng","lat")
+placeFrame[,c("lat","lng")]=rbind(nn_pdx,hotd)
+placeFrame$place=c("Nelson\\Nygaard","Hair of the Dog")
 
 #Travel time computation
 tt = travel_time(from=nn_pdx,to=hotd,key = gKey,
@@ -105,6 +104,8 @@ base_map = get_map(location=box,
 ggmap(base_map) +
   geom_path(data=route_fort,
             aes(x=long,y=lat,group=group,color = totalDuration),size = 1.5,alpha=0.7)+
+  geom_point(data=placeFrame,aes(x=lng,y=lat))+
+  geom_label_repel(data=placeFrame,aes(x=lng,y=lat,label=place))+
   guides(color=guide_legend("Travel Time"))+
   coord_map()+
   scale_color_distiller(palette="RdYlGn")+
@@ -115,9 +116,9 @@ ggmap(base_map) +
 ```
 
 #### Hair of the Dog to Produce Row
-```{r,fig.width=7, fig.height=4}
+```{r,fig.width=7, fig.height=4,warning=FALSE,message=FALSE}
 #Location of Produce Row Cafe (Portland, OR)
-produce_row = geocode_place("Produce Row Portland")
+produce_row = geocode_place("Produce Row Portland",key = gKey)
 
 #Travel time computation
 tt = travel_time(from=hotd,to=produce_row,key = gKey,
@@ -158,9 +159,9 @@ print(tt)
 ```
 
 #### Produce Row to St. Johns
-```{r,fig.width=7, fig.height=4}
+```{r,fig.width=7, fig.height=4,warning=FALSE,message=FALSE}
 #Location of St. Johns neighborhood (Portland, OR)
-st_johns = geocode_place("St Johns Portland Oregon")
+st_johns = geocode_place("St Johns Portland Oregon",key = gKey)
 
 #Travel time computation
 tt = travel_time(from=produce_row,to=st_johns,key = gKey,
@@ -194,9 +195,9 @@ ggmap(base_map) +
 ```
 
 #### St. Johns to Multnomah Falls
-```{r,fig.width=7, fig.height=4}
+```{r,fig.width=7, fig.height=4,warning=FALSE,message=FALSE}
 #Location of Multnomah Falls in Columbia River Gorge (Oregon)
-falls = geocode_place("Multnomah Falls Oregon")
+falls = geocode_place("Multnomah Falls Oregon",key = gKey)
 
 #Travel time computation
 tt = travel_time(from=st_johns,to=falls,key = gKey,
