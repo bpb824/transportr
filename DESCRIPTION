@@ -5,12 +5,28 @@ Version: 0.1.0
 Authors@R: c(person("Bryan","Blanc",role = c("aut","cre"), email = "bryanpblanc@gmail.com"))
 Author: Bryan Blanc
 Maintainer: <bryanpblanc@gmail.com>
-Description: Tools for querying, managing, exploring, and analyzing transportation and urban planning data.
+Description: Tools for querying, managing, exploring, and analyzing
+    transportation and urban planning data.
 License: GPL-3
 LazyData: TRUE
-Imports: stats, RPostgreSQL, RMySQL, DBI, rjson, dplyr,
-         lubridate, timeDate, ggplot2, rgdal, rgeos,
-         sp, Hmisc, shapefiles, classInt
-Suggests: knitr,
+Imports:
+    stats,
+    RPostgreSQL,
+    RMySQL,
+    DBI,
+    rjson,
+    dplyr,
+    lubridate,
+    timeDate,
+    ggplot2,
+    rgdal,
+    rgeos,
+    sp,
+    Hmisc,
+    shapefiles,
+    classInt
+Suggests:
+    knitr,
     rmarkdown
 VignetteBuilder: knitr
+RoxygenNote: 5.0.1

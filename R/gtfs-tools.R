@@ -107,3 +107,24 @@ exportStopShape = function(feedPath,outPath,shapeName,returnShape=FALSE){
 
 }
 
+#' Import GTFS tables into a single Excel file
+#'
+#' @param feedPath A relative or absolute file path to the feed you want to import into Excel
+#'
+#' @return Writes Excel file to directory of feed
+#' @export
+gtfs_to_excel = function(feedPath){
+  files = list.files(feedPath)
+  wb = XLConnect::loadWorkbook(paste0(feedPath,"/","gtfs_all.xlsx"),create = TRUE)
+  txts = files[grepl(".txt",files)]
+  for(i in 1:length(txts)){
+    file = txts[i]
+    sheetName = gsub(".txt","",file)
+    XLConnect::createSheet(wb,name=sheetName)
+    data = read.csv(paste0(feedPath,"/",file))
+    XLConnect::writeWorksheet(wb,data,sheet = sheetName)
+    print(i)
+  }
+  XLConnect::saveWorkbook(wb)
+}
+

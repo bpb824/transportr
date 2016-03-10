@@ -114,10 +114,10 @@ all = cbind(geo,dat)
 rownames(all)=1:nrow(all)
 
 sub = all %>% select(state,county,tract,contains("Total"),contains("Bicycle"))
-sub = sub %>% rename(total_commute=`Sex of Workers by Means of Transportation to Work:  Total: `,
-                     total_bike=`Sex of Workers by Means of Transportation to Work:  Bicycle `,
-                     bike_male=`Sex of Workers by Means of Transportation to Work:  Male: Bicycle `,
-                     bike_female=`Sex of Workers by Means of Transportation to Work:  Female: Bicycle `)
+sub = sub %>% rename(total_commute=`Sex of Workers by Means of Transportation to Work: Total:`,
+                     total_bike=`Sex of Workers by Means of Transportation to Work: Bicycle`,
+                     bike_male=`Sex of Workers by Means of Transportation to Work: Male: Bicycle`,
+                     bike_female=`Sex of Workers by Means of Transportation to Work: Female: Bicycle`)
 sub = sub %>% mutate(bike_prop = total_bike/total_commute)
 
 sub$county =str_pad(sub$county,width=3,side="left",pad="0")
