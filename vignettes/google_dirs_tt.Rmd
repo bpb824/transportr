@@ -51,7 +51,7 @@ We can obtain travel times from the Google Directions API using `transportr`'s `
 - **Optional**
     + **Departure Time**: The time of departure for the trip you would like to request a travel time for. You cannot specify both departure and arrival times.
     + **Arrival Time**: The time of arrival for the trip you would like to request a travel time for. You cannot specify both departure and arrival times.
-    +**Type of Travel Time**: Do you want the travel time for the fastest route, the shortest route, the route with minimum transfers (only applies to transit), or the average travel time? Input 'average', 'shortest', 'fastest', 'minimize transfers'; default is 'fastest'. 
+    + **Type of Travel Time**: Do you want the travel time for the fastest route, the shortest route, the route with minimum transfers (only applies to transit), or the average travel time? Input 'average', 'shortest', 'fastest', 'minimize transfers'; default is 'fastest'. 
     
 If multiple routes are proposed by Google, you can select the travel time for the fastest, the shortest distance, or average the travel times for the proposed routes. 
 
@@ -59,7 +59,7 @@ If multiple routes are proposed by Google, you can select the travel time for th
 
 Here are a couple computations of travel times for various configurations of the function:
 
-#### Nelson\\Nygaard PDX to Hair of the Dog Brewery
+#### Nelson\\Nygaard PDX to Hair of the Dog Brewery (Biking)
 We're going to employ `transportr`'s `geocode_place` function (which makes use of the Google Places API) to quickly identify the locations of places like NN PDX and Hair of the Dog. We'll use a departure time of tomorrow 5:00 PM (17:00). We'll also use `ggmap` to quickly visualize the routes available for a sniff test of the data.
 
 ```{r,fig.width=7, fig.height=4,warning=FALSE,message=FALSE}
@@ -115,7 +115,7 @@ ggmap(base_map) +
   xlab("") + ylab("")
 ```
 
-#### Hair of the Dog to Produce Row
+#### Hair of the Dog to Produce Row (Walking)
 ```{r,fig.width=7, fig.height=4,warning=FALSE,message=FALSE}
 #Location of Produce Row Cafe (Portland, OR)
 produce_row = geocode_place("Produce Row Portland",key = gKey)
@@ -158,7 +158,7 @@ ggmap(base_map) +
 print(tt)
 ```
 
-#### Produce Row to St. Johns
+#### Produce Row to St. Johns (Transit)
 ```{r,fig.width=7, fig.height=4,warning=FALSE,message=FALSE}
 #Location of St. Johns neighborhood (Portland, OR)
 st_johns = geocode_place("St Johns Portland Oregon",key = gKey)
@@ -194,7 +194,7 @@ ggmap(base_map) +
   xlab("") + ylab("")
 ```
 
-#### St. Johns to Multnomah Falls
+#### St. Johns to Multnomah Falls (Driving)
 ```{r,fig.width=7, fig.height=4,warning=FALSE,message=FALSE}
 #Location of Multnomah Falls in Columbia River Gorge (Oregon)
 falls = geocode_place("Multnomah Falls Oregon",key = gKey)

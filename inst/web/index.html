@@ -83,6 +83,15 @@ devtools::install_github(&quot;bpb824/transportr&quot;)
             
       <li>
         <code><a href="route2shape.html">route2shape</a></code><br />Convert decoded Google Directions polyline into SpatialLines object</li>
+            
+      <li>
+        <code><a href="geocode_place.html">geocode_place</a></code><br />Geocode a place name using Google Places API</li>
+            
+      <li>
+        <code><a href="travel_time.html">travel_time</a></code><br />Query travel times from Google API</li>
+            
+      <li>
+        <code><a href="gDirsToShape.html">gDirsToShape</a></code><br />Convert Google directions to Spatial Object</li>
     
     </ul>
     <h3>GTFS Utilities</h3>
@@ -95,14 +104,27 @@ devtools::install_github(&quot;bpb824/transportr&quot;)
         <code><a href="fetchFeed.html">fetchFeed</a></code><br />Fetch GTFS feed files</li>
             
       <li>
-        <code><a href="spatialTransitShapes.html">spatialTransitShapes</a></code><br />Create SpatialLines from GTFS shapes.txt file</li>
+        <code><a href="exportRouteShape.html">exportRouteShape</a></code><br />Export GTFS routes to ESRI shapefile</li>
             
       <li>
-        <code><a href="exportRouteShape.html">exportRouteShape</a></code><br />Export GTFS routes to ESRI shapefile</li>
+        <code><a href="gtfs_to_excel.html">gtfs_to_excel</a></code><br />Import GTFS tables into a single Excel file</li>
+            
+      <li>
+        <code><a href="exportStopShape.html">exportStopShape</a></code><br />Export GTFS stops to ESRI shapefile</li>
+    
+    </ul>
+    <h3>Census Data Utilities</h3>
+    <p>These functions are used to query and/or analyze Census and American Community Survey Data</p>
+
+    
+    <ul class="index">
+        
+      <li>
+        <code><a href="transit_pops.html">transit_pops</a></code><br />Fetch transit dependent population statistics</li>
     
     </ul>
     <h3>General Use Functions</h3>
-    <p>These functions are used to peform various intermediate data handling.</p>
+    <p>These functions are used to peform various data handling and analysis tasks.</p>
 
     
     <ul class="index">
@@ -120,6 +142,7 @@ devtools::install_github(&quot;bpb824/transportr&quot;)
     <h2>Vignettes</h2>
     <ul>
       <li><a href="vignettes/ACS_Data.html">Querying, Managing, and Mapping ACS Data in R</a></li>
+      <li><a href="vignettes/google_dirs_tt.html">Vignette Title</a></li>
       <li><a href="vignettes/GTFS_Export.html">Exporting GTFS Data to an ESRI Shapefile</a></li>
       <li><a href="vignettes/naturalBreaks.html">Calculating Natural Breaks</a></li>
     </ul>

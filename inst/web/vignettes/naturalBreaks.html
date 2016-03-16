@@ -10,7 +10,7 @@
 
 <meta name="author" content="Bryan Blanc" />
 
-<meta name="date" content="2015-12-28" />
+<meta name="date" content="2016-03-15" />
 
 <title>Calculating Natural Breaks</title>
 
@@ -78,7 +78,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <div id="header">
 <h1 class="title">Calculating Natural Breaks</h1>
 <h4 class="author"><em>Bryan Blanc</em></h4>
-<h4 class="date"><em>2015-12-28</em></h4>
+<h4 class="date"><em>2016-03-15</em></h4>
 </div>
 
 
@@ -127,8 +127,8 @@ result =<span class="st"> </span><span class="kw">naturalBreaks</span>(<span cla
               <span class="dt">numBreaks =</span> <span class="dv">7</span>)
 <span class="co">#this will interactively display the resulting table</span>
 <span class="kw">datatable</span>(result)</code></pre></div>
-<p><div id="htmlwidget-3411" style="width:100%;height:auto;" class="datatables"></div>
-<script type="application/json" data-for="htmlwidget-3411">{"x":{"data":[["1","2","3","4","5","6","7","8"],[0,1144,1661,2276,3211,4863,8732,12399],[0,75,133,193,266,360,498,845]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> </th>\n      <th>TOT</th>\n      <th>X65UP</th>\n    </tr>\n  </thead>\n</table>","options":{"columnDefs":[{"className":"dt-right","targets":[1,2]},{"orderable":false,"targets":0}],"order":[],"autoWidth":false,"orderClasses":false},"callback":null,"filter":"none"},"evals":[]}</script></p>
+<p><div id="htmlwidget-9804" style="width:100%;height:auto;" class="datatables"></div>
+<script type="application/json" data-for="htmlwidget-9804">{"x":{"data":[["1","2","3","4","5","6","7","8"],[0,1144,1661,2276,3211,4863,8732,12399],[0,75,133,193,266,360,498,845]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> </th>\n      <th>TOT</th>\n      <th>X65UP</th>\n    </tr>\n  </thead>\n</table>","options":{"columnDefs":[{"className":"dt-right","targets":[1,2]},{"orderable":false,"targets":0}],"order":[],"autoWidth":false,"orderClasses":false},"callback":null,"filter":"none"},"evals":[]}</script></p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co">#Your result has been calculated. You can also examine it in RStudio's data view (default upper right) </span>
 <span class="co">#or just save it out to a .csv file as below. </span>
 <span class="kw">write.csv</span>(result,<span class="st">&quot;broken.csv&quot;</span>)</code></pre></div>
@@ -164,8 +164,8 @@ result =<span class="st"> </span><span class="kw">naturalBreaks</span>(<span cla
               <span class="dt">numBreaks =</span> <span class="dv">7</span>)
 <span class="co">#this will interactively display the resulting table</span>
 <span class="kw">datatable</span>(result)</code></pre></div>
-<p><div id="htmlwidget-8800" style="width:100%;height:auto;" class="datatables"></div>
-<script type="application/json" data-for="htmlwidget-8800">{"x":{"data":[["1","2","3","4","5","6","7","8"],[6.33246,6.33246,7.42836,8.10929,8.94741,9.53746,9.89914,11.5047],[5.39153,5.63539,8.00982,8.81959,10.1589,11.1142,11.9983,14.5126],[46.9581320450886,48.1840277777778,54.1829573934837,58.5853658536585,59.7135416666667,63.8202,70.7506527415144,75.7410714285714]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> </th>\n      <th>B_TPI</th>\n      <th>C1_Pop_15</th>\n      <th>F_Access</th>\n    </tr>\n  </thead>\n</table>","options":{"columnDefs":[{"className":"dt-right","targets":[1,2,3]},{"orderable":false,"targets":0}],"order":[],"autoWidth":false,"orderClasses":false},"callback":null,"filter":"none"},"evals":[]}</script></p>
+<p><div id="htmlwidget-8399" style="width:100%;height:auto;" class="datatables"></div>
+<script type="application/json" data-for="htmlwidget-8399">{"x":{"data":[["1","2","3","4","5","6","7","8"],[6.33246,6.33246,7.42836,8.10929,8.94741,9.53746,9.89914,11.5047],[5.39153,5.63539,8.00982,8.81959,10.1589,11.1142,11.9983,14.5126],[46.9581320450886,48.1840277777778,54.1829573934837,58.5853658536585,59.7135416666667,63.8202,70.7506527415144,75.7410714285714]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> </th>\n      <th>B_TPI</th>\n      <th>C1_Pop_15</th>\n      <th>F_Access</th>\n    </tr>\n  </thead>\n</table>","options":{"columnDefs":[{"className":"dt-right","targets":[1,2,3]},{"orderable":false,"targets":0}],"order":[],"autoWidth":false,"orderClasses":false},"callback":null,"filter":"none"},"evals":[]}</script></p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co">#Your result has been calculated. You can also examine it in RStudio's data view (default upper right) </span>
 <span class="co">#or just save it out to a .csv file as below. </span>
 <span class="kw">write.csv</span>(result,<span class="st">&quot;broken_excel.csv&quot;</span>)</code></pre></div>

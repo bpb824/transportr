@@ -28,26 +28,27 @@ First you will want to load in some packages with functions you will need to fol
 require(transportr)
 #The workhorse package for querying ACS data
 require(acs)
-#The premier package for data handling
+#Package for fetching census geography spatial data
+require(tigris)
+#Read/Write excel spreadsheets
+require(XLConnect)
+#The premier packages for data handling
 require(dplyr)
+require(tidyr)
 #A great static plotting framework for R
 require(ggplot2)
-#Includes a few scales for plotting that will come in handy
 require(scales)
-#This package includes utilities for reading/writing shapefiles
-require(rgdal)
-#This package includes the neccessary infrastructure for handling spatial data in R
+#These packages includes the neccessary infrastructure for handling spatial data in R
 require(sp)
-#This package has a few functions useful for dealing with spatial data
+require(rgdal)
 require(rgeos)
 require(taRifx.geo)
 #This package has some handy functions for dealing with character strings
 require(stringr)
 #This package is used to create interactive maps
 require(leaflet)
-#This package is used for a couple of HTML-related functions
+#These packages are used for a couple of HTML-related functions
 require(htmltools)
-#This package is used to write the leaflet map to a standalone HTML page
 require(htmlwidgets)
 ```
 
@@ -158,5 +159,59 @@ outpath = "/Users/bblanc/Downloads"
 writeOGR(subShape,outpath,"portlandBikeTracts",overwrite_layer = TRUE,driver = "ESRI Shapefile")
 ```
 
+## Query transit dependency populaton statistics and join them to the corresponding spatial boundaries for mapping
+```{r,warning=FALSE,message=FALSE}
+#Import a table with the information about which geographies we will examine
+packPath = system.file("extdata",package="transportr")
+geo_table =readWorksheetFromFile(paste0(packPath,"/COIC_places.xlsx"),sheet="geographies")
+
+#Extract the place IDs and make a geography object
+place_ids = geo_table$Place_ID
+geo = geo.make(state="OR", place = place_ids)
+
+#Query the neccessary ACS for transit dependent populations
+td_pops = transit_pops(geo)
+
+#Calculate an an average of the transit dependent population 
+#percentages to serve as our measure of transit propensity
+td_pops$tpi = apply(td_pops[,3:9],1,sum)/7
+
+#Pad the place IDs to make them five digits for joining
+td_pops$place_id =str_pad(place_ids,width="5",side="left",pad="0")  
+
+#Download the place spatial data for Oregon
+or_places = places("OR")
+
+#Subset to the places we are interested in
+sub_places = or_places[or_places$PLACEFP %in% td_pops$place_id,]
+
+#Join the transit dependency data to the spatial data
+pf = geo_join(sub_places,td_pops,"PLACEFP","place_id")
+
+#Create a color palette between blue and red corresponding to the domain of the quantity we 
+#want to visualize; in this case transit propensity
+pal = colorNumeric(
+  palette = c("blue","red"),
+  domain = pf$tpi
+)
+
+#Create the leaflet map widget
+leaflet(pf, width = "100%",height =500) %>%
+#Add base map tiles
+  addProviderTiles("CartoDB.Positron",options = providerTileOptions(noWrap = TRUE))%>%
+#Draw the polygons on the map using our palette and creating a popup with the transit propensity percentage
+  addPolygons(fillColor = ~pal(tpi),fillOpacity=0.5,weight=1.5,color=~pal(tpi)
+              ,popup = ~htmlEscape(paste0(round(tpi*100,1),"%"))) %>%
+  addLegend(position="bottomright",pal=pal, values = ~tpi, 
+            title="Transit Propensity",
+            labFormat = labelFormat(prefix = '', suffix = '%',transform = function(x) 100 * x))
+```
+
+Finally, you can write the result to a shapefile. 
+```{r,warning=FALSE,message=FALSE}
+##Export the data to a shapefile
+outpath = "/Users/bblanc/Downloads"
+writeOGR(pf,outpath,"coic_transit",overwrite_layer = TRUE,driver = "ESRI Shapefile")
+```
 
 

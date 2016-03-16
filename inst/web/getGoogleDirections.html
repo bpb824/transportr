@@ -52,7 +52,7 @@
 <div class="row">
   <div class="span8">
     <h2>Usage</h2>
-    <pre><div>getGoogleDirections(from, to, key)</div></pre>
+    <pre><div>getGoogleDirections(from, to, key, mode, departure&nbsp;=&nbsp;NULL, arrival&nbsp;=&nbsp;NULL, alternatives&nbsp;=&nbsp;FALSE, waypoints&nbsp;=&nbsp;NULL)</div></pre>
     
     <h2>Arguments</h2>
     <dl>
@@ -62,6 +62,14 @@
       <dd>End location to fetch directions for (vector in [Lat Lng] format)</dd>
       <dt>key</dt>
       <dd>API key for Google Directions API (from Google Developers Console)</dd>
+      <dt>mode</dt>
+      <dd>Travel mode: one of four strings: 'driving', 'walking', 'bicycling', 'transit'</dd>
+      <dt>departure</dt>
+      <dd>Optional departure time of POSIXct class. Cannot specify both arrival and departure times.</dd>
+      <dt>arrival</dt>
+      <dd>Optional arrival time of POSIXct class. Cannot specify both arrival and departure times.</dd>
+      <dt>waypoints</dt>
+      <dd>Optional additional locations to travel through along route. A data frame or with 'lat' and 'lng' columns, and an observation for each destination.</dd>
     </dl>
     
     <div class="Value">
@@ -77,13 +85,6 @@ Encoded google directions string
       <h2>Description</h2>
 
       <p>Fetch Google directions from Directions API</p>
-  
-    </div>
-
-    <div class="References">
-      <h2>References</h2>
-
-      <p>Adapted from function here: https://gist.github.com/diegovalle/916889/895dba68c0f9f5398c9d9c75856126e233b9acd7</p>
   
     </div>
       </div>
