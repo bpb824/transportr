@@ -4,10 +4,12 @@
 \alias{fetchFeed}
 \title{Fetch GTFS feed files}
 \usage{
-fetchFeed(feedName)
+fetchFeed(feedName, outDir = ".")
 }
 \arguments{
 \item{feedName}{Name of transit agency (will try to find similar names if not exact match)}
+
+\item{outDir}{The directory in which to save the downloaded feed}
 }
 \value{
 None

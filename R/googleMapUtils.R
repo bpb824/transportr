@@ -217,6 +217,96 @@ gDirsToShape= function(googleDirs,mode){
 
 }
 
+#' Title
+#'
+#' @param origins Data frame with origin data with column names 'id','lat','lng' or 'id','place' (if places=TRUE)
+#' @param destinations Data frame with destination data with column names 'id','lat','lng' or 'id','place' (if places=TRUE)
+#' @param places Boolean indicating if you are providing lat/lng locations or place names
+#' @param key Google Maps API Key
+#' @param mode Travel mode
+#' @param departure POSIXct departure time
+#' @param arrival POSIXct arrival time
+#'
+#' @return Data frame with travel times and distances identified by origin and destination id
+#' @export
+tt_matrix = function(origins,destinations,places = FALSE,key,mode,departure = NULL, arrival = NULL){
+
+  #Constants
+  base_url = "https://maps.googleapis.com/maps/api/distancematrix/json?origins="
+
+  #Catch exceptions
+  if(!is.null(departure) & !is.null(arrival)){
+    stop("Cannot specify both departure and arrival times.")
+  }
+  if(!is.null(arrival) & mode =="driving"){
+    stop("Cannot specify arrival time for driving travel time estimates")
+  }
+
+  #Geocode if handed places for origins and destinations
+  if(places==TRUE){
+    stop("Places functionality not ready yet")
+  }
+
+  #Travel time query and storage
+  time_frame = data.frame(matrix(nrow=nrow(origins)*nrow(destinations),ncol = 5))
+  colnames(time_frame)=c("origin_id","destination_id","tt_min","tt_traffic_min","distance_km")
+  time_frame$origin_id=origins$id
+  time_frame$destination_id=sort(rep(destinations$id,nrow(origins)))
+
+  progress=0
+  pb = txtProgressBar(min = 0, max = nrow(time_frame),style = 3)
+
+  for(i in 1:nrow(origins)){
+    oid = origins$id[i]
+    for(j in 1:nrow(destinations)){
+      did = destinations$id[j]
+      origin = origins[i,c("lat","lng")]
+      destination = destinations[j,c("lat","lng")]
+
+      #Add origin and destination to url
+      url = paste0(base_url,paste(origin,collapse = ","),"&destinations=",paste(destination,collapse = ","))
+
+      #Add key to url
+      url = paste0(url, "&key=",key)
+
+      #Add mode to url
+      url = paste0(url, "&mode=",mode)
+
+      #Add departure/arrival time to url
+      if(!is.null(departure)){
+        url = paste0(url,"&departure_time=",departure)
+      }else if(!is.null(arrival)){
+        url = paste0(url,"&arrival_time=",arrival)
+      }else{
+        url = paste0(url,"&departure_time=",as.numeric(Sys.time()+60))
+      }
+
+      #Add traffic model to url
+      url = paste0(url,"&traffic_model=best_guess")
+
+      #Send query, parse response
+      response = httr::content(httr::GET(url),as = "parsed", type ="application/json")
+      if(response$rows[[1]]$elements[[1]]$status!="ZERO_RESULTS"){
+        time_frame$distance_km[time_frame$origin_id==oid & time_frame$destination_id==did]=response$rows[[1]]$elements[[1]]$distance$value/1000
+        time_frame$tt_min[time_frame$origin_id==oid & time_frame$destination_id==did]=response$rows[[1]]$elements[[1]]$duration$value/60
+        if(mode=="driving"){
+          time_frame$tt_traffic_min[time_frame$origin_id==oid & time_frame$destination_id==did]=response$rows[[1]]$elements[[1]]$duration_in_traffic$value/60
+        }
+      }
+      progress = progress +1
+      setTxtProgressBar(pb,progress)
+    }
+  }
+
+  close(pb)
+
+  if(mode == "transit"){
+    time_frame = time_frame %>% select(-tt_traffic_min)
+  }
+
+  return(time_frame)
+}
+
 
 #' Query travel times from Google API
 #'
@@ -241,6 +331,8 @@ travel_time = function(from,to,key,mode,departure = NULL, arrival = NULL,tt_type
       dirs =  getGoogleDirections(from,to,gKey,mode,departure = departure)
     }else if(!is.null(arrival)){
       dirs =  getGoogleDirections(from,to,gKey,mode,arrival = arrival)
+    }else{
+      dirs =  getGoogleDirections(from,to,gKey,mode)
     }
 
     if(dirs$status=="OK"){

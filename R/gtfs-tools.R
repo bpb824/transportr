@@ -3,10 +3,11 @@
 #' This function will match the requested transit agency name with a feed via the GTFS data exchange, and the latest feed files will be downloaded to 'feeds' subfolder of working directory.
 #'
 #' @param feedName Name of transit agency (will try to find similar names if not exact match)
+#' @param outDir The directory in which to save the downloaded feed
 #'
 #' @return None
 #' @export
-fetchFeed = function(feedName){
+fetchFeed = function(feedName,outDir="."){
   url = "http://www.gtfs-data-exchange.com/api/agencies"
   gtfsFeeds = httr::content(httr::GET(url),as = "parsed", type ="application/json")
   feedData = transportr::list2frame(gtfsFeeds$data)
@@ -16,15 +17,15 @@ fetchFeed = function(feedName){
   }else if(length(row)==1){
     feedInfo = feedData[row,]
     fileURL = paste0(feedInfo$dataexchange_url,"latest.zip")
-    if(!dir.exists("feeds")){
-      dir.create("feeds")
+    if(!dir.exists(paste0(outDir,"/feeds"))){
+      dir.create(paste0(outDir,"/feeds"))
     }
-    if(!dir.exists(paste0("feeds/",feedInfo$name))){
-      dir.create(paste0("feeds/",feedInfo$name))
+    if(!dir.exists(paste0(outDir,"/feeds/",feedInfo$name))){
+      dir.create(paste0(outDir,"/feeds/",feedInfo$name))
     }
-    download.file(fileURL,paste0("feeds/",feedInfo$name,"/feed.zip"))
-    unzip(paste0("feeds/",feedInfo$name,"/feed.zip"), exdir=paste0("feeds/",feedInfo$name))
-    print(paste0("Feed downloaded and unzipped to ","feeds/",feedInfo$name))
+    download.file(fileURL,paste0(outDir,"/feeds/",feedInfo$name,"/feed.zip"))
+    unzip(paste0(outDir,"/feeds/",feedInfo$name,"/feed.zip"), exdir=paste0(outDir,"/feeds/",feedInfo$name))
+    print(paste0("Feed downloaded and unzipped to ",outDir,"/feeds/",feedInfo$name))
   }else{
     print("More than one result available. Here are the names of the transit agencies found from your search term:")
     feedData$name[row]
@@ -94,16 +95,15 @@ exportRouteShape = function(feedPath,outPath,shapeName,returnShape=FALSE){
 #'
 #' @return Returns stops shape as SpatialPointsDataFrame if desired
 #' @export
-exportStopShape = function(feedPath,outPath,shapeName,returnShape=FALSE){
+exportStopShape = function(feedPath,outPath= NULL,shapeName = NULL,writeShapefile=FALSE){
   stops = read.csv(paste0(feedPath,"/stops.txt"),stringsAsFactors = FALSE)
   sp::coordinates(stops)=~stop_lon+stop_lat
   stops@proj4string= CRS("+init=epsg:4326")
 
-  rgdal::writeOGR(stops,outPath,shapeName,overwrite_layer = TRUE,driver = "ESRI Shapefile")
-
-  if(returnShape==TRUE){
-    return(stops)
+  if(writeShapefile==TRUE){
+    rgdal::writeOGR(stops,outPath,shapeName,overwrite_layer = TRUE,driver = "ESRI Shapefile")
   }
+  return(stops)
 
 }
 

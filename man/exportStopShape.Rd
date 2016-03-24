@@ -4,7 +4,8 @@
 \alias{exportStopShape}
 \title{Export GTFS stops to ESRI shapefile}
 \usage{
-exportStopShape(feedPath, outPath, shapeName, returnShape = FALSE)
+exportStopShape(feedPath, outPath = NULL, shapeName = NULL,
+  writeShapefile = FALSE)
 }
 \arguments{
 \item{feedPath}{The relative or absolute path to the folder containing the GTFS feed text files}
