@@ -4,7 +4,8 @@
 \alias{exportRouteShape}
 \title{Export GTFS routes to ESRI shapefile}
 \usage{
-exportRouteShape(feedPath, outPath, shapeName, returnShape = FALSE)
+exportRouteShape(feedPath, outPath = NULL, shapeName = NULL,
+  writeShapefile = FALSE)
 }
 \arguments{
 \item{feedPath}{The relative or absolute path to the folder containing the GTFS feed text files}
@@ -13,7 +14,7 @@ exportRouteShape(feedPath, outPath, shapeName, returnShape = FALSE)
 
 \item{shapeName}{The filename for your resulting shapefile}
 
-\item{returnShape}{Boolean indicating if route shape should be returned}
+\item{writeShapefile}{Boolean indicating if route shape should be written to ESRI Shapefile}
 }
 \value{
 Returns route shape as SpatialLinesDataFrame if desired

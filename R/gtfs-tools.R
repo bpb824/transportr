@@ -37,11 +37,11 @@ fetchFeed = function(feedName,outDir="."){
 #' @param feedPath The relative or absolute path to the folder containing the GTFS feed text files
 #' @param outPath The relative or absolute path to the folder where you would like to save the reuslting shapefile
 #' @param shapeName The filename for your resulting shapefile
-#' @param returnShape Boolean indicating if route shape should be returned
+#' @param writeShapefile Boolean indicating if route shape should be written to ESRI Shapefile
 #'
 #' @return Returns route shape as SpatialLinesDataFrame if desired
 #' @export
-exportRouteShape = function(feedPath,outPath,shapeName,returnShape=FALSE){
+exportRouteShape = function(feedPath,outPath= NULL,shapeName = NULL,writeShapefile=FALSE){
   shapes = read.csv(paste0(feedPath,"/shapes.txt"),stringsAsFactors = FALSE)
   routes = read.csv(paste0(feedPath,"/routes.txt"),stringsAsFactors = FALSE)
   trips = read.csv(paste0(feedPath,"/trips.txt"),stringsAsFactors = FALSE)
@@ -78,12 +78,11 @@ exportRouteShape = function(feedPath,outPath,shapeName,returnShape=FALSE){
 
   route_shape = sp::SpatialLinesDataFrame(transitShapes,shapeData)
 
-  rgdal::writeOGR(route_shape,outPath,shapeName,overwrite_layer = TRUE,driver = "ESRI Shapefile")
-
-  if(returnShape==TRUE){
-    return(route_shape)
+  if(writeShapefile==TRUE){
+    rgdal::writeOGR(route_shape,outPath,shapeName,overwrite_layer = TRUE,driver = "ESRI Shapefile")
   }
 
+  return(route_shape)
 }
 
 #' Export GTFS stops to ESRI shapefile
@@ -91,14 +90,14 @@ exportRouteShape = function(feedPath,outPath,shapeName,returnShape=FALSE){
 #' @param feedPath The relative or absolute path to the folder containing the GTFS feed text files
 #' @param outPath The relative or absolute path to the folder where you would like to save the reuslting shapefile
 #' @param shapeName The filename for your resulting shapefile
-#' @param returnShape Boolean indicating if route shape should be returned
+#' @param returnShape  Boolean indicating if route shape should be written to ESRI Shapefile
 #'
 #' @return Returns stops shape as SpatialPointsDataFrame if desired
 #' @export
 exportStopShape = function(feedPath,outPath= NULL,shapeName = NULL,writeShapefile=FALSE){
   stops = read.csv(paste0(feedPath,"/stops.txt"),stringsAsFactors = FALSE)
   sp::coordinates(stops)=~stop_lon+stop_lat
-  stops@proj4string= CRS("+init=epsg:4326")
+  stops@proj4string= sp::CRS("+init=epsg:4326")
 
   if(writeShapefile==TRUE){
     rgdal::writeOGR(stops,outPath,shapeName,overwrite_layer = TRUE,driver = "ESRI Shapefile")

@@ -14,7 +14,7 @@ exportStopShape(feedPath, outPath = NULL, shapeName = NULL,
 
 \item{shapeName}{The filename for your resulting shapefile}
 
-\item{returnShape}{Boolean indicating if route shape should be returned}
+\item{returnShape}{Boolean indicating if route shape should be written to ESRI Shapefile}
 }
 \value{
 Returns stops shape as SpatialPointsDataFrame if desired
