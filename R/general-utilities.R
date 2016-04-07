@@ -1,3 +1,21 @@
+#' Expand ID Column Vector
+#'
+#' @param id_vec The vector of unique IDs you would like to 'expand' (i.e. turn [1,2] into [1,1,2,2])
+#' @param n_rep The number of repetitions in the 'expansion'
+#'
+#' @return Expanded vector
+#' @export
+expand_id_col = function(id_vec,n_rep){
+  new_col = vector(length=length(id_vec)*n_rep)
+  x = 1
+  for(i in 1:length(id_vec)){
+    new_col[x:(x+n_rep-1)]=id_vec[i]
+    x=x+n_rep
+  }
+  return(new_col)
+}
+
+
 #' Converts Two-Level List to Data Frame
 #'
 #' @param list List with One level of sub-lists (sub-lists cannot contain lists)
