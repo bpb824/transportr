@@ -11,7 +11,8 @@
 #' @return Encoded google directions string
 #' @export
 getGoogleDirections <- function(from, to, key, mode, departure=NULL, arrival=NULL,
-                                alternatives=FALSE, waypoints = NULL) {
+                                alternatives=FALSE, waypoints = NULL,transit_rt_pref=NULL,
+                                traffic_model=NULL) {
 
   if(!is.null(departure) & !is.null(arrival)){
     stop("Cannot specify both departure and arrival times.")
@@ -37,6 +38,18 @@ getGoogleDirections <- function(from, to, key, mode, departure=NULL, arrival=NUL
     if(alternatives){
       url = paste0(url,"&alternatives=true")
     }
+    
+    if(!is.null(transit_rt_pref)){
+      if(!(transit_rt_pref %in% c("less_walking","fewer_transfers"))){
+        stop("check transit_rt_pref input")
+      }
+      url = paste0(url,"&transit_routing_preference=",transit_rt_pref)
+    }
+    
+    if(!is.null(traffic_model)){
+      url = paste0(url,"&traffic_model=",traffic_model)
+    }
+    
 
     return(rjson::fromJSON(paste(readLines(url), collapse="")))
   }else{
