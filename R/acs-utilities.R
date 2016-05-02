@@ -13,7 +13,7 @@ transit_pops = function(geog,endyear=2014, span=5){
   require(acs, quietly = TRUE)
   require(tidyr,quietly = TRUE)
 
-  names = sapply(slot(geo, 'geo.list'), function(i) slot(i, 'name'))
+  names = sapply(slot(geog, 'geo.list'), function(i) slot(i, 'name'))
   results = data_frame(geography=names)
 
   #Total Population
