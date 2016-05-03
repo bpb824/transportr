@@ -13,13 +13,16 @@ transit_pops = function(geog,endyear=2014, span=5){
   require(acs, quietly = TRUE)
   require(tidyr,quietly = TRUE)
 
-  names = sapply(slot(geog, 'geo.list'), function(i) slot(i, 'name'))
-  results = data_frame(geography=names)
-
   #Total Population
   tid = "B01003"
   result = acs.fetch(endyear = endyear,span=span,geography=geog,table.number =tid,col.names = "pretty")
   data = as_data_frame(data.frame(result@estimate,check.names = FALSE))
+
+  base_geog = result@geography
+  names = base_geog$NAME
+
+  results = tbl_df(base_geog)
+
   results$total_pop = data$`Total Population: Total`
   print(paste0(round(1/8*100,0),"% done with queries"))
 
