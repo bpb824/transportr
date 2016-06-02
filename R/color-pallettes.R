@@ -8,8 +8,8 @@ color_palette = function(n,type="cat",palette = "Nelson Nygaard"){
     color_set$orange="#EEAC5B"
     color_set$citron ="#BDBD00"
     color_set$cocoa="#987366"
-    color_set$sand=colorspace::hex2RGB("#CEC8A8")
-    color_set$plum=colorspace::hex2RGB("#6E2B62")
+    color_set$sand="#CEC8A8"
+    color_set$plum="#6E2B62"
     if(type=="cat"){
       all_colors = c(color_set$blue,color_set$red,
                      color_set$citron,color_set$plum,
@@ -43,10 +43,10 @@ color_palette = function(n,type="cat",palette = "Nelson Nygaard"){
 
     }
   }
-  
-  available = length(colors)
+
+  available = length(all_colors)
   indices = seq(1,n)
 
-  return(colors[indices])
+  return(all_colors[indices])
 
 }
