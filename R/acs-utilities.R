@@ -37,7 +37,8 @@ transit_pops = function(geog,endyear=2014, span=5){
              `Ratio of Income to Poverty Level in the Past 12 Months: 1.00 to 1.24`+
              `Ratio of Income to Poverty Level in the Past 12 Months: 1.25 to 1.49`) %>%
     dplyr::select(total,below_150) %>% dplyr::mutate(below_150_prop= below_150/total)
-  results$poverty = props$below_150_prop
+  
+  results$poverty = props$below_150_prop 
   print(paste0(round(2/8*100,0),"% done with queries"))
 
   #Older Adults
@@ -54,7 +55,8 @@ transit_pops = function(geog,endyear=2014, span=5){
     dplyr::ungroup() %>%
     dplyr::mutate(old_prop = old/total)
 
-  results$older_adults = props$old_prop
+  results = results %>% left_join(props %>% select(geography,old_prop) %>% 
+                                    rename(older_adults=old_prop,NAME=geography),by="NAME")
   print(paste0(round(3/8*100,0),"% done with queries"))
 
   #Youth 10-17
@@ -68,7 +70,8 @@ transit_pops = function(geog,endyear=2014, span=5){
     dplyr::group_by(geography,total) %>% dplyr::summarise(young = sum(value))  %>%
     dplyr::ungroup() %>% dplyr::mutate(young_prop = young/total)
 
-  results$youth = props$young_prop
+  results = results %>% left_join(props %>% select(geography,young_prop) %>% 
+                                    rename(youth=young_prop,NAME=geography),by="NAME")
   print(paste0(round(4/8*100,0),"% done with queries"))
 
   #College Age 18-24
@@ -83,7 +86,8 @@ transit_pops = function(geog,endyear=2014, span=5){
     group_by(geography,total) %>% dplyr::summarise(young = sum(value)) %>% 
     dplyr::ungroup() %>%dplyr::mutate(young_prop = young/total)
 
-  results$college_age = props$young_prop
+  results = results %>% left_join(props %>% select(geography,young_prop) %>% 
+                                    rename(college_age=young_prop,NAME=geography),by="NAME")
   print(paste0(round(5/8*100,0),"% done with queries"))
 
   #Persons with disabilities
@@ -97,7 +101,8 @@ transit_pops = function(geog,endyear=2014, span=5){
     group_by(geography,total) %>% dplyr::summarise(disabled = sum(value)) %>% 
     dplyr::ungroup() %>% dplyr::mutate(disabled_prop = disabled/total)
 
-  results$disabled = props$disabled_prop
+  results = results %>% left_join(props %>% select(geography,disabled_prop) %>% 
+                                    rename(disabled=disabled_prop,NAME=geography),by="NAME")
   print(paste0(round(6/8*100,0),"% done with queries"))
 
   #Households without Vehicles
@@ -111,7 +116,8 @@ transit_pops = function(geog,endyear=2014, span=5){
     group_by(geography,total) %>% dplyr::summarise(zero_vehicles = sum(value)) %>%
     dplyr::ungroup() %>% dplyr::mutate(zero_vehicles_prop = zero_vehicles/total)
 
-  results$no_vehicles = props$zero_vehicles_prop
+  results = results %>% left_join(props %>% select(geography,zero_vehicles_prop) %>% 
+                                    rename(no_vehicles=zero_vehicles_prop,NAME=geography),by="NAME")
   print(paste0(round(7/8*100,0),"% done with queries"))
 
   #Limited English
@@ -125,7 +131,8 @@ transit_pops = function(geog,endyear=2014, span=5){
     group_by(geography,total) %>% dplyr::summarise(no_english = sum(value)) %>% 
     dplyr::ungroup() %>% dplyr::mutate(no_english_prop = no_english/total)
 
-  results$non_english = props$no_english_prop
+  results = results %>% left_join(props %>% select(geography,no_english_prop) %>% 
+                                    rename(non_english=no_english_prop,NAME=geography),by="NAME")
   print(paste0(round(8/8*100,0),"% done with queries"))
 
   return(results)
