@@ -48,7 +48,7 @@ transit_pops = function(geog,endyear=2014, span=5){
                                contains("70"),contains("75"),contains("80"),
                                contains("85"))
   sub$geography = names
-  test= sub %>% dplyr::rename(total=`Sex by Age: Total:`) %>%
+  props= sub %>% dplyr::rename(total=`Sex by Age: Total:`) %>%
     tidyr::gather(key,value,-geography,-total) %>% dplyr::select(-key) %>%
     dplyr::group_by(geography,total) %>% dplyr::summarise(old = sum(value)) %>% 
     dplyr::ungroup() %>%
