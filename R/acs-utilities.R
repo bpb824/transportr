@@ -48,9 +48,11 @@ transit_pops = function(geog,endyear=2014, span=5){
                                contains("70"),contains("75"),contains("80"),
                                contains("85"))
   sub$geography = names
-  props= sub %>% dplyr::rename(total=`Sex by Age: Total:`) %>%
+  test= sub %>% dplyr::rename(total=`Sex by Age: Total:`) %>%
     tidyr::gather(key,value,-geography,-total) %>% dplyr::select(-key) %>%
-    dplyr::group_by(geography,total) %>% dplyr::summarise(old = sum(value)) %>% dplyr::mutate(old_prop = old/total)
+    dplyr::group_by(geography,total) %>% dplyr::summarise(old = sum(value)) %>% 
+    dplyr::ungroup() %>%
+    dplyr::mutate(old_prop = old/total)
 
   results$older_adults = props$old_prop
   print(paste0(round(3/8*100,0),"% done with queries"))
@@ -63,7 +65,8 @@ transit_pops = function(geog,endyear=2014, span=5){
   sub$geography = names
   props= sub %>% dplyr::rename(total=`Sex by Age: Total:`) %>%
     tidyr::gather(key,value,-geography,-total) %>% dplyr::select(-key) %>%
-    dplyr::group_by(geography,total) %>% dplyr::summarise(young = sum(value)) %>% dplyr::mutate(young_prop = young/total)
+    dplyr::group_by(geography,total) %>% dplyr::summarise(young = sum(value))  %>%
+    dplyr::ungroup() %>% dplyr::mutate(young_prop = young/total)
 
   results$youth = props$young_prop
   print(paste0(round(4/8*100,0),"% done with queries"))
@@ -77,7 +80,8 @@ transit_pops = function(geog,endyear=2014, span=5){
   sub$geography = names
   props= sub %>% dplyr::rename(total=`Sex by Age: Total:`) %>%
     tidyr::gather(key,value,-geography,-total) %>% dplyr::select(-key) %>%
-    group_by(geography,total) %>% dplyr::summarise(young = sum(value)) %>% dplyr::mutate(young_prop = young/total)
+    group_by(geography,total) %>% dplyr::summarise(young = sum(value)) %>% 
+    dplyr::ungroup() %>%dplyr::mutate(young_prop = young/total)
 
   results$college_age = props$young_prop
   print(paste0(round(5/8*100,0),"% done with queries"))
@@ -90,7 +94,8 @@ transit_pops = function(geog,endyear=2014, span=5){
   sub$geography = names
   props= sub %>% dplyr::rename(total=`Sex by Age by Disability Status: Total:`) %>%
     tidyr::gather(key,value,-geography,-total) %>% dplyr::select(-key) %>%
-    group_by(geography,total) %>% dplyr::summarise(disabled = sum(value)) %>% dplyr::mutate(disabled_prop = disabled/total)
+    group_by(geography,total) %>% dplyr::summarise(disabled = sum(value)) %>% 
+    dplyr::ungroup() %>% dplyr::mutate(disabled_prop = disabled/total)
 
   results$disabled = props$disabled_prop
   print(paste0(round(6/8*100,0),"% done with queries"))
@@ -103,7 +108,8 @@ transit_pops = function(geog,endyear=2014, span=5){
   sub$geography = names
   props= sub %>% dplyr::rename(total=`HOUSEHOLD SIZE BY VEHICLES AVAILABLE: Total:`) %>%
     tidyr::gather(key,value,-geography,-total) %>% dplyr::select(-key) %>%
-    group_by(geography,total) %>% dplyr::summarise(zero_vehicles = sum(value)) %>% dplyr::mutate(zero_vehicles_prop = zero_vehicles/total)
+    group_by(geography,total) %>% dplyr::summarise(zero_vehicles = sum(value)) %>%
+    dplyr::ungroup() %>% dplyr::mutate(zero_vehicles_prop = zero_vehicles/total)
 
   results$no_vehicles = props$zero_vehicles_prop
   print(paste0(round(7/8*100,0),"% done with queries"))
@@ -116,7 +122,8 @@ transit_pops = function(geog,endyear=2014, span=5){
   sub$geography = names
   props= sub %>% dplyr::rename(total=`Age by Language Spoken at Home by Ability to Speak English for the Population 5+ Yrs: Total:`) %>%
     tidyr::gather(key,value,-geography,-total) %>% dplyr::select(-key) %>%
-    group_by(geography,total) %>% dplyr::summarise(no_english = sum(value)) %>% dplyr::mutate(no_english_prop = no_english/total)
+    group_by(geography,total) %>% dplyr::summarise(no_english = sum(value)) %>% 
+    dplyr::ungroup() %>% dplyr::mutate(no_english_prop = no_english/total)
 
   results$non_english = props$no_english_prop
   print(paste0(round(8/8*100,0),"% done with queries"))

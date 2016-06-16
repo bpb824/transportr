@@ -1,4 +1,12 @@
 
+#' Color Pallettes
+#'
+#' @param n Number of Colors neeeded
+#' @param type Type of color palette ("cat","seq","div")
+#' @param palette Name of palette
+#'
+#' @return Vector of colors
+#' @export
 color_palette = function(n,type="cat",palette = "Nelson Nygaard"){
 
   if(palette=="Nelson Nygaard"){
