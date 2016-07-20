@@ -52,6 +52,8 @@ color_palette = function(n,type="cat",palette = "Nelson Nygaard"){
     }
   }
 
+  else if(palette=="Glendale")
+
   available = length(all_colors)
   indices = seq(1,n)
 

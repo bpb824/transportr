@@ -8,27 +8,35 @@
 #' @return None
 #' @export
 fetchFeed = function(feedName,outDir="."){
-  url = "http://www.gtfs-data-exchange.com/api/agencies"
+  #url = "http://www.gtfs-data-exchange.com/api/agencies"
+  url = "https://transit.land/api/v1/operators?per_page=1000"
   gtfsFeeds = httr::content(httr::GET(url),as = "parsed", type ="application/json")
-  feedData = transportr::list2frame(gtfsFeeds$data)
-  row = grep(tolower(feedName), tolower(feedData$name))
-  if(length(row)==0){
+
+  names =unlist(lapply(gtfsFeeds$operators,function(x) x$name))
+  test = grep(tolower(feedName), tolower(names))
+
+
+  if(length(test)==0){
     stop("Could not find the feed you are looking for. The available feeds are listed here: http://www.gtfs-data-exchange.com/agencies")
-  }else if(length(row)==1){
-    feedInfo = feedData[row,]
-    fileURL = paste0(feedInfo$dataexchange_url,"latest.zip")
+  }else if(length(test)==1){
+    operator = names[test]
+    meta = gtfsFeeds$operators[[test]]
+    id = meta$imported_from_feed_onestop_ids[[1]]
+    url = paste0("https://transit.land/api/v1/feeds/",id)
+    feedInfo = httr::content(httr::GET(url),as = "parsed", type ="application/json")
+    feed_url = feedInfo$url
     if(!dir.exists(paste0(outDir,"/feeds"))){
       dir.create(paste0(outDir,"/feeds"))
     }
-    if(!dir.exists(paste0(outDir,"/feeds/",feedInfo$name))){
-      dir.create(paste0(outDir,"/feeds/",feedInfo$name))
+    if(!dir.exists(paste0(outDir,"/feeds/",meta$name))){
+      dir.create(paste0(outDir,"/feeds/",meta$name))
     }
-    download.file(fileURL,paste0(outDir,"/feeds/",feedInfo$name,"/feed.zip"))
-    unzip(paste0(outDir,"/feeds/",feedInfo$name,"/feed.zip"), exdir=paste0(outDir,"/feeds/",feedInfo$name))
-    print(paste0("Feed downloaded and unzipped to ",outDir,"/feeds/",feedInfo$name))
+    download.file(feed_url,paste0(outDir,"/feeds/",meta$name,"/feed.zip"))
+    unzip(paste0(outDir,"/feeds/",meta$name,"/feed.zip"), exdir=paste0(outDir,"/feeds/",meta$name))
+    print(paste0("Feed downloaded and unzipped to ",outDir,"/feeds/",meta$name))
   }else{
     print("More than one result available. Here are the names of the transit agencies found from your search term:")
-    feedData$name[row]
+    print(names[test])
   }
 }
 
@@ -61,8 +69,8 @@ exportRouteShape = function(feedPath,outPath= NULL,shapeName = NULL,writeShapefi
   transitShapes = sp::SpatialLines(lineList, sp::CRS("+init=epsg:4326"))
 
   shapeIds = sort(unique(trips$shape_id))
-  shapeData = data.frame(matrix(nrow = length(shapeIds),ncol =7))
-  colnames(shapeData)=c("shape_id","route_id","direction_id","route_short_name","route_long_name","route_type","route_url")
+  shapeData = data.frame(matrix(nrow = length(shapeIds),ncol =8))
+  colnames(shapeData)=c("shape_id","route_id","direction_id","route_short_name","route_long_name","route_type","route_url","route_color")
   shapeData$shape_id = shapeIds
   for (i in 1:nrow(shapeData)){
     sid = shapeData$shape_id[i]
@@ -72,11 +80,16 @@ exportRouteShape = function(feedPath,outPath= NULL,shapeName = NULL,writeShapefi
     shapeData$route_long_name[i]=routes$route_long_name[routes$route_id==shapeData$route_id[i]]
     shapeData$route_type[i]=routes$route_type[routes$route_id==shapeData$route_id[i]]
     shapeData$route_url[i]=routes$route_url[routes$route_id==shapeData$route_id[i]]
+    shapeData$route_color[i]=routes$route_color[routes$route_id==shapeData$route_id[i]]
     #print(i)
   }
+
+  shapeData = shapeData %>%
+    mutate(route_color=ifelse(nchar(route_color)==0,"#00659A",paste0("#",route_color)))
+
   rownames(shapeData)=shapeData$shape_id
 
-  route_shape = sp::SpatialLinesDataFrame(transitShapes,shapeData)
+  route_shape = sp::SpatialLinesDataFrame(transitShapes,data.frame(shapeData))
 
   if(writeShapefile==TRUE){
     rgdal::writeOGR(route_shape,outPath,shapeName,overwrite_layer = TRUE,driver = "ESRI Shapefile")
