@@ -149,3 +149,117 @@ transit_pops = function(geog,endyear=2014, span=5){
 
   return(results)
 }
+
+#' Join Census Geography to ACS Results
+#'
+#' @param table Data frame of ACS results, such as the output of `transit_pops()`
+#' @param geo_level A geographic level: county, place, tract, or block group
+#'
+#' @return SpatialPolygonsDataFrame with ACS data joined
+#' @export
+geo_join = function(table,geo_level){
+  if(geo_level=="place"){
+    states = unique(table$state)
+    if(length(states)>1){
+      geom = tigris::places(state = states[1])
+      geom = sp::spChFIDs(geom,as.character(1:length(geom)))
+      nex = length(geom)+1
+      for(i in 2:length(states)){
+        next_geom = tigris::places(state = states[i])
+        next_geom = sp::spChFIDs(next_geom,as.character(nex:(nex+length(next_geom)-1)))
+        nex = length(next_geom)+1
+        geom = maptools::spRbind(geom,next_geom)
+      }
+    }else{
+      geom = tigris::places(state = states[1])
+    }
+    table = table %>% 
+      mutate(GEOID=paste0(state,str_pad(place,side="left",width=5,pad="0")))
+    full = geom
+    full@data = data.frame(
+      full@data %>% left_join(table,by="GEOID")
+    )
+    return(full)
+  }else if(geo_level=="tract"){
+    states = unique(table$state)
+    if(length(states)>1){
+      counties = unique(table$county[table$state==states[1]])
+      geom = tigris::tracts(state = states[1],county = counties)
+      geom = sp::spChFIDs(geom,as.character(1:length(geom)))
+      nex = length(geom)+1
+      for(i in 2:length(states)){
+        counties = unique(table$county[table$state==states[i]])
+        next_geom = tigris::tracts(state = states[i],county=counties)
+        next_geom = sp::spChFIDs(next_geom,as.character(nex:(nex+length(next_geom)-1)))
+        nex = length(next_geom)+1
+        geom = maptools::spRbind(geom,next_geom)
+      }
+    }else{
+      counties = unique(table$county[table$state==states[1]])
+      geom = tigris::tracts(state = states[1],county = counties)
+    }
+    table = table %>% 
+      mutate(GEOID=paste0(state,str_pad(county,side="left",width=3,pad="0"),tract))
+    full = geom
+    full@data = data.frame(
+      full@data %>% left_join(table,by="GEOID")
+    )
+    return(full)
+  }else if(geo_level=="block group"){
+    states = unique(table$state)
+    if(length(states)>1){
+      counties = unique(table$county[table$state==states[1]])
+      geom = tigris::block_groups(state = states[1],county = counties)
+      geom = sp::spChFIDs(geom,as.character(1:length(geom)))
+      nex = length(geom)+1
+      for(i in 2:length(states)){
+        counties = unique(table$county[table$state==states[i]])
+        next_geom = tigris::block_groups(state = states[i],county=counties)
+        next_geom = sp::spChFIDs(next_geom,as.character(nex:(nex+length(next_geom)-1)))
+        nex = length(next_geom)+1
+        geom = maptools::spRbind(geom,next_geom)
+      }
+    }else{
+      counties = unique(table$county[table$state==states[1]])
+      geom = tigris::block_groups(state = states[1],county = counties)
+    }
+    table = table %>% 
+      mutate(GEOID=paste0(state,str_pad(county,side="left",width=3,pad="0"),
+                          str_pad(tract,side="left",width=6,pad="0"),blockgroup))
+    full = geom
+    full@data = data.frame(
+      full@data %>% left_join(table,by="GEOID")
+    )
+    return(full)
+  }else if(geo_level=="county"){
+    states = unique(table$state)
+    if(length(states)>1){
+      geom = tigris::counties(state = states[1])
+      counties = unique(table$county[table$state==states[1]])
+      geom = geom[geom$COUNTYFP %in% str_pad(counties,width=3,side="left",pad="0"),]
+      geom = sp::spChFIDs(geom,as.character(1:length(geom)))
+      nex = length(geom)+1
+      for(i in 2:length(states)){
+        next_geom = tigris::counties(state = states[i])
+        counties = unique(table$county[table$state==states[i]])
+        next_geom = next_geom[next_geom$COUNTYFP %in% str_pad(counties,width=3,side="left",pad="0"),]
+        next_geom = sp::spChFIDs(next_geom,as.character(nex:(nex+length(next_geom)-1)))
+        nex = length(next_geom)+1
+        geom = maptools::spRbind(geom,next_geom)
+      }
+    }else{
+      geom = tigris::counties(state = states[1])
+      counties = unique(table$county[table$state==states[1]])
+      geom = geom[geom$COUNTYFP %in% str_pad(counties,width=3,side="left",pad="0"),]
+    }
+    table = table %>% 
+      mutate(GEOID=paste0(state,str_pad(county,side="left",width=3,pad="0")))
+    full = geom
+    full@data = data.frame(
+      full@data %>% left_join(table,by="GEOID")
+    )
+    return(full)
+  }else{
+    stop("'geo_level' must be place, tract, block group, or county")
+  }
+}

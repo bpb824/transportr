@@ -1,0 +1,130 @@
+---
+title: "Transportation Market Analysis"
+author: "Bryan Blanc"
+date: "8/7/2016"
+output: html_document
+---
+
+This tutorial will guide you through using R to fetch, display, and export statistics and geographies typically useful in transportation (e.g., transit) market analyses. 
+
+# Fetching Transit Supportive Population Statistics from ACS
+American Community Survey data are used in a wide variety of applications by transportation planners. Until recently, much of this data required a fairly arduous querying, downloading, and cleaning process; the US Census Bureau's APIs and developers' query wrappers have made this task much easier. 
+
+There is already a great R package for dealing with ACS data aptly named [`acs`](https://cran.r-project.org/web/packages/acs/index.html), which this vignette heavily relies upon.
+
+Other additional information for utilizing the `acs` package can be found at the below links:
+
+- [R Package Documentation](https://cran.r-project.org/web/packages/acs/acs.pdf)
+- [A tutorial assembled by the package's creator](http://eglenn.scripts.mit.edu/citystate/wp-content/uploads/2013/06/wpid-working_with_acs_R3.pdf)
+- [A great blog post covering some of the same topics as below](http://zevross.com/blog/2015/10/14/manipulating-and-mapping-us-census-data-in-r-using-the-acs-tigris-and-leaflet-packages-3/)
+
+## Setting up your workspace
+If you have worked with R before, much of this should be familiar. There are a few initial things you should do to set up your workspace.
+
+First you will want to load in some packages with functions you will need to follow the tutorial:
+```{r,message=FALSE,warning=FALSE}
+#Bryan's transportation data package. Includes some data you will need to work with this tutorial.
+require(transportr)
+#The workhorse package for querying ACS data
+require(acs)
+#Package for fetching census geography spatial data
+require(tigris)
+#Read/Write excel spreadsheets
+require(XLConnect)
+#The premier packages for data handling
+require(dplyr)
+require(tidyr)
+#A great static plotting framework for R
+require(ggplot2)
+#Scales for plotting
+require(scales)
+#These packages includes the neccessary infrastructure for handling spatial data in R
+require(sp)
+require(rgdal)
+require(rgeos)
+require(taRifx.geo)
+#This package has some handy functions for dealing with character strings
+require(stringr)
+#This package is used to create interactive maps
+require(leaflet)
+#These packages are used for a couple of HTML-related functions
+require(htmltools)
+require(htmlwidgets)
+```
+
+Then you need to set your working directory and load in your US Census Bureau API Key:
+```{r,message=FALSE,warning=FALSE}
+#Set working directory for input and output files
+#Set your working directory and uncomment the below line
+#setwd("/Users/bblanc/OneDrive/_transportr_development/_projects/censusData")
+#Bryan's ACS API Key
+api_key = "04976a4a378107d2fb53acdbde84d0aad121cb10"
+#'Install' ACS API Key so you don't have to call it with every function
+api.key.install(api_key)
+```
+
+## Creating an ACS query 
+This tutorial uses data/queries used for the Hood River Transit Master Plan as a representative guide. 
+
+To form an ACS query, you must first define four parameters of interest:
+
+*Geography*
+  : What geographical extent (e.g., the counties mentioned above) and resolution (e.g., census tract level) are you requesting data for?
+  
+*ACS Table*
+  : What table contains the statistics you are interested in? This may take some exploring prior to your data query. You can search for tables using keywords with the `acs.lookup` function, or you can utilize the [American Fact Finder web site](http://factfinder.census.gov/faces/nav/jsf/pages/index.xhtml) to find the specific table you are interested in. 
+  
+*End Year*
+  : ACS data are catalogued by the last year in the sample. What end year are you interested in?
+
+*Span*
+  : ACS data come in three flavors: 5-year, 3-year, and 1-year samples. 1-year samples are only available for areas where there was a large enough sample for statistics to be reliable. 5-year samples are available for all geographies, and are typically what is used in Nelson Nygaard market analyses.
+  
+Bryan developed the `transit_pops()` to take most of the work out of this query process, but you will still need to define your geography of interest. However, if you need statistics from different tables you may need to develop your own query; this requires some amount of customization. Herein, the `transit_pops()` function is relied upon to make this process as simple as possible. 
+
+## Defining your geography
+For the Hood River TMP, we are interested in block-group level statistics for several counties in Oregon and Washington:
+  
+- Oregon
+    - Hood River County
+    - Multnomah County 
+    - Clackamas County 
+    - Sherman County 
+    - Wasco County
+- Washington
+    - Clark County
+    - Klickitat County
+    - Skamania County
+    
+You can define your geography using the `geo.make()` function from the `acs` package. A geography is made by defining several area and resolution parameters; these can be different depending on the geography of interest, but as the resolution increases the number of parameters neccessarily generally increases. Refer to the `geo.make()` help file for more information. Geographies in the `acs` package are grouped by state, so if you are requesting for more than one state you must add two queries together, as is done below. 
+```{r}
+#Here we are selecting all block groups, for all tracts, within the selected counties, within the selected states.
+geog = geo.make(state="OR", county =c("Clackamas","Multnomah","Wasco","Hood River","Sherman"),
+                tract="*", block.group ="*",check = TRUE)+
+  geo.make(state="WA", county =c("Klickitat","Clark","Skamania"),
+           tract="*", block.group ="*", check = TRUE)
+```
+## Querying the data
+We're now ready to query data using the `transit_pops()` function. As long as your `year` is 2014 and your `span` is 5, all you need to worry about is the `geog` parameter. So plug in the geography we generated above. The querying takes a couple of minutes, depending on how big your geography is, but progress should be reported to the console. 
+```{r}
+tpops_bg = transit_pops(geog=geog)
+```
+That's all there is to it for fetching the ACS data. 
+
+# Joining ACS data to geography geometry
+So now that you have the data, maybe you'd like to generate a map with it, but first we have to join the statistics to the relevant geography geometry. Thanks to the `tigris` package, this is very easy to do. Since we have two states, there are a few tricks neccessary to group the geometry together, as `tigris` groups geoographies by states as well.
+```{r}
+
+
+```
+
+
+
+# Fetching LEHD/LODES data
+
+# Joining LEHD/LODES data to geography geometry
+
+# Analyzing/Visualizing Data in R
+
+# Exporting Data from R
+
