@@ -112,10 +112,9 @@ tpops_bg = transit_pops(geog=geog)
 That's all there is to it for fetching the ACS data. 
 
 # Joining ACS data to geography geometry
-So now that you have the data, maybe you'd like to generate a map with it, but first we have to join the statistics to the relevant geography geometry. Thanks to the `tigris` package, this is very easy to do. Since we have two states, there are a few tricks neccessary to group the geometry together, as `tigris` groups geoographies by states as well.
+So now that you have the data, maybe you'd like to generate a map with it, but first we have to join the statistics to the relevant geography geometry. Thanks to the `tigris` package, and a helper function from `transportr`, this is very easy to do. Simply use the `geo_join` function:
 ```{r}
-
-
+bg_data = transportr::g
 ```
 
 

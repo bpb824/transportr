@@ -157,7 +157,7 @@ transit_pops = function(geog,endyear=2014, span=5){
 #'
 #' @return SpatialPolygonsDataFrame with ACS data joined
 #' @export
-geo_join = function(table,geo_level){
+geo_join_acs = function(table,geo_level){
   if(geo_level=="place"){
     states = unique(table$state)
     if(length(states)>1){
