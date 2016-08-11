@@ -106,24 +106,74 @@ geog = geo.make(state="OR", county =c("Clackamas","Multnomah","Wasco","Hood Rive
 ```
 ## Querying the data
 We're now ready to query data using the `transit_pops()` function. As long as your `year` is 2014 and your `span` is 5, all you need to worry about is the `geog` parameter. So plug in the geography we generated above. The querying takes a couple of minutes, depending on how big your geography is, but progress should be reported to the console. 
-```{r}
+```{r Query ACS Data}
 tpops_bg = transit_pops(geog=geog)
 ```
 That's all there is to it for fetching the ACS data. 
 
 # Joining ACS data to geography geometry
-So now that you have the data, maybe you'd like to generate a map with it, but first we have to join the statistics to the relevant geography geometry. Thanks to the `tigris` package, and a helper function from `transportr`, this is very easy to do. Simply use the `geo_join` function:
+So now that you have the data, maybe you'd like to generate a map with it, but first we have to join the statistics to the relevant geography geometry. Thanks to the `tigris` package, and a helper function from `transportr`, this is very easy to do. Simply use the `geo_join()` function:
+```{r Query ACS Data}
+bg_data = geo_join_acs(tpops_bg,"block group")
+```
+
+# Fetching LODES data
+The U.S. Census Bureau's Longitudinal Employee Household Dynamics (LEHD) division publishes LEHD Origin-Destination Employment Statistics annually. These statistics are useful for understanding commute flow patterns, employment density, residential density of employees, and other quanities of interest to transportation planners. 
+
+To download LODES data, you will need to supply a *state* and *year* for your query, as well as what *file type* you are interested in. The following file types are available:
+
+- Origin Destination (OD)
+- Residential Area Characteristic (RAC)
+- Workplace Area Characteristic (WAC)
+
+More information on what variables are available in each of these file types is described in the LODES technical documentation (see latest technical doc: [http://lehd.ces.census.gov/data/](http://lehd.ces.census.gov/data/))
+
+Using some helper functions from `transportr`, downloading LODES data is easy. First, you will want the geographic crosswalk so that you can understand which census blocks belong to which other geographies (e.g., block groups, tracts, places, counties). 
+```{r,warning=FALSE,message=FALSE}
+crosswalk = lodes_crosswalk("OR")
+```
+
+After fetching the crosswalk, you can then download the LODES files you're interested in. Some of these are large files, so the download may take a few minutes. After downloading, you will likely want to save out the files so there is no need to download them again. 
+
+```{r,message=FALSE,warning=FALSE}
+od_data = lodes_fetch("OR","OD",2014)
+wac_data = lodes_fetch("OR","WAC",2014)
+rac_data = lodes_fetch("OR","RAC",2014)
+
+#Save out files as .csv or .rds objects
+#write_csv(od_data,"od_data.csv")
+#saveRDS(od_data,"od_data.rds")
+```
+
+# Aggregating and joining LODES data to geography geometry
+Typically, we will want to utilize the LODES data at a higher geographic level than blocks. This will require aggregating the LODES data. Often, we will then want to join the data to the relevant geograpy geometry. 
+
 ```{r}
-bg_data = transportr::g
+wac_bg = lodes_agg(wac_data,"WAC","block group",crosswalk)
+wac_bg_geom = transportr::geo_join_lodes(wac_bg,type = "WAC","block group",crosswalk)
+
 ```
 
 
 
-# Fetching LEHD/LODES data
-
-# Joining LEHD/LODES data to geography geometry
-
 # Analyzing/Visualizing Data in R
+Now that we've downloaded and joined both ACS and LODES data to our geographies, we can do some data analysis and visualizaton. 
+
+## Non-spatial 
+Even though we went through all the work of joining those geographies, we may want to do some statistical analysis or visualization ignorant of the geometric/spatial components of the data. 
+
+## Spatial 
+The most common application of this data is to generate demographic maps. 
+
+### Leaflet maps
+
+### Density calculation/mapping
 
 # Exporting Data from R
+Often, you will want to carry out data assembly in ArcGIS for export to Adobe Illustrator. To do this, we must first save our dataset as a shapefile. This is relatively easy:
+```{r Save out ESRI Shapefile}
+writeOGR(bg_data,"example","block_group_data",
+         driver = "ESRI Shapefile",overwrite_layer = TRUE)
+```
+
 

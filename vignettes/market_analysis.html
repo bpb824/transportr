@@ -133,21 +133,148 @@ $(document).ready(function () {
 <li><a href="http://eglenn.scripts.mit.edu/citystate/wp-content/uploads/2013/06/wpid-working_with_acs_R3.pdf">A tutorial assembled by the package’s creator</a></li>
 <li><a href="http://zevross.com/blog/2015/10/14/manipulating-and-mapping-us-census-data-in-r-using-the-acs-tigris-and-leaflet-packages-3/">A great blog post covering some of the same topics as below</a></li>
 </ul>
+<div id="setting-up-your-workspace" class="section level2">
+<h2>Setting up your workspace</h2>
+<p>If you have worked with R before, much of this should be familiar. There are a few initial things you should do to set up your workspace.</p>
+<p>First you will want to load in some packages with functions you will need to follow the tutorial:</p>
+<pre class="r"><code>#Bryan's transportation data package. Includes some data you will need to work with this tutorial.
+require(transportr)
+#The workhorse package for querying ACS data
+require(acs)
+#Package for fetching census geography spatial data
+require(tigris)
+#Read/Write excel spreadsheets
+require(XLConnect)
+#The premier packages for data handling
+require(dplyr)
+require(tidyr)
+#A great static plotting framework for R
+require(ggplot2)
+#Scales for plotting
+require(scales)
+#These packages includes the neccessary infrastructure for handling spatial data in R
+require(sp)
+require(rgdal)
+require(rgeos)
+require(taRifx.geo)
+#This package has some handy functions for dealing with character strings
+require(stringr)
+#This package is used to create interactive maps
+require(leaflet)
+#These packages are used for a couple of HTML-related functions
+require(htmltools)
+require(htmlwidgets)</code></pre>
+<p>Then you need to set your working directory and load in your US Census Bureau API Key:</p>
+<pre class="r"><code>#Set working directory for input and output files
+#Set your working directory and uncomment the below line
+#setwd(&quot;/Users/bblanc/OneDrive/_transportr_development/_projects/censusData&quot;)
+#Bryan's ACS API Key
+api_key = &quot;04976a4a378107d2fb53acdbde84d0aad121cb10&quot;
+#'Install' ACS API Key so you don't have to call it with every function
+api.key.install(api_key)</code></pre>
 </div>
-<div id="joining-acs-data-to-geographies" class="section level1">
-<h1>Joining ACS data to geographies</h1>
+<div id="creating-an-acs-query" class="section level2">
+<h2>Creating an ACS query</h2>
+<p>This tutorial uses data/queries used for the Hood River Transit Master Plan as a representative guide.</p>
+<p>To form an ACS query, you must first define four parameters of interest:</p>
+<dl>
+<dt><em>Geography</em></dt>
+<dd>What geographical extent (e.g., the counties mentioned above) and resolution (e.g., census tract level) are you requesting data for?
+</dd>
+<dt><em>ACS Table</em></dt>
+<dd>What table contains the statistics you are interested in? This may take some exploring prior to your data query. You can search for tables using keywords with the <code>acs.lookup</code> function, or you can utilize the <a href="http://factfinder.census.gov/faces/nav/jsf/pages/index.xhtml">American Fact Finder web site</a> to find the specific table you are interested in.
+</dd>
+<dt><em>End Year</em></dt>
+<dd>ACS data are catalogued by the last year in the sample. What end year are you interested in?
+</dd>
+<dt><em>Span</em></dt>
+<dd>ACS data come in three flavors: 5-year, 3-year, and 1-year samples. 1-year samples are only available for areas where there was a large enough sample for statistics to be reliable. 5-year samples are available for all geographies, and are typically what is used in Nelson Nygaard market analyses.
+</dd>
+</dl>
+<p>Bryan developed the <code>transit_pops()</code> to take most of the work out of this query process, but you will still need to define your geography of interest. However, if you need statistics from different tables you may need to develop your own query; this requires some amount of customization. Herein, the <code>transit_pops()</code> function is relied upon to make this process as simple as possible.</p>
+</div>
+<div id="defining-your-geography" class="section level2">
+<h2>Defining your geography</h2>
+<p>For the Hood River TMP, we are interested in block-group level statistics for several counties in Oregon and Washington:</p>
+<ul>
+<li>Oregon
+<ul>
+<li>Hood River County</li>
+<li>Multnomah County</li>
+<li>Clackamas County</li>
+<li>Sherman County</li>
+<li>Wasco County</li>
+</ul></li>
+<li>Washington
+<ul>
+<li>Clark County</li>
+<li>Klickitat County</li>
+<li>Skamania County</li>
+</ul></li>
+</ul>
+<p>You can define your geography using the <code>geo.make()</code> function from the <code>acs</code> package. A geography is made by defining several area and resolution parameters; these can be different depending on the geography of interest, but as the resolution increases the number of parameters neccessarily generally increases. Refer to the <code>geo.make()</code> help file for more information. Geographies in the <code>acs</code> package are grouped by state, so if you are requesting for more than one state you must add two queries together, as is done below.</p>
+<pre class="r"><code>#Here we are selecting all block groups, for all tracts, within the selected counties, within the selected states.
+geog = geo.make(state=&quot;OR&quot;, county =c(&quot;Clackamas&quot;,&quot;Multnomah&quot;,&quot;Wasco&quot;,&quot;Hood River&quot;,&quot;Sherman&quot;),
+                tract=&quot;*&quot;, block.group =&quot;*&quot;,check = TRUE)+
+  geo.make(state=&quot;WA&quot;, county =c(&quot;Klickitat&quot;,&quot;Clark&quot;,&quot;Skamania&quot;),
+           tract=&quot;*&quot;, block.group =&quot;*&quot;, check = TRUE)</code></pre>
+<pre><code>## Testing geography item 1: Tract *, Blockgroup *, Clackamas County, Oregon .... OK.
+## Testing geography item 2: Tract *, Blockgroup *, Multnomah County, Oregon .... OK.
+## Testing geography item 3: Tract *, Blockgroup *, Wasco County, Oregon .... OK.
+## Testing geography item 4: Tract *, Blockgroup *, Hood River County, Oregon .... OK.
+## Testing geography item 5: Tract *, Blockgroup *, Sherman County, Oregon .... OK.
+## Testing geography item 1: Tract *, Blockgroup *, Klickitat County, Washington .... OK.
+## Testing geography item 2: Tract *, Blockgroup *, Clark County, Washington .... OK.
+## Testing geography item 3: Tract *, Blockgroup *, Skamania County, Washington .... OK.</code></pre>
+</div>
+<div id="querying-the-data" class="section level2">
+<h2>Querying the data</h2>
+<p>We’re now ready to query data using the <code>transit_pops()</code> function. As long as your <code>year</code> is 2014 and your <code>span</code> is 5, all you need to worry about is the <code>geog</code> parameter. So plug in the geography we generated above. The querying takes a couple of minutes, depending on how big your geography is, but progress should be reported to the console.</p>
+<pre class="r"><code>tpops_bg = transit_pops(geog=geog)</code></pre>
+<pre><code>## [1] &quot;12% done with queries&quot;
+## [1] &quot;25% done with queries&quot;
+## [1] &quot;38% done with queries&quot;
+## [1] &quot;50% done with queries&quot;
+## [1] &quot;62% done with queries&quot;
+## [1] &quot;75% done with queries&quot;
+## [1] &quot;88% done with queries&quot;
+## [1] &quot;100% done with queries&quot;</code></pre>
+<p>That’s all there is to it for fetching the ACS data.</p>
+</div>
+</div>
+<div id="joining-acs-data-to-geography-geometry" class="section level1">
+<h1>Joining ACS data to geography geometry</h1>
+<p>So now that you have the data, maybe you’d like to generate a map with it, but first we have to join the statistics to the relevant geography geometry. Thanks to the <code>tigris</code> package, and a helper function from <code>transportr</code>, this is very easy to do. Simply use the <code>geo_join</code> function:</p>
+<pre class="r"><code>bg_data = geo_join_acs(tpops_bg,&quot;block group&quot;)</code></pre>
 </div>
 <div id="fetching-lehdlodes-data" class="section level1">
 <h1>Fetching LEHD/LODES data</h1>
 </div>
-<div id="joining-lehdlodes-data-to-geographies" class="section level1">
-<h1>Joining LEHD/LODES data to geographies</h1>
+<div id="joining-lehdlodes-data-to-geography-geometry" class="section level1">
+<h1>Joining LEHD/LODES data to geography geometry</h1>
 </div>
 <div id="analyzingvisualizing-data-in-r" class="section level1">
 <h1>Analyzing/Visualizing Data in R</h1>
+<p>Now that we’ve downloaded and joined both ACS and LODES data to our geographies, we can do some data analysis and visualizaton.</p>
+<div id="non-spatial-analysis" class="section level2">
+<h2>Non-spatial analysis</h2>
+<p>Even though we went through all the work of joining those geographies, we may want to do some statistical analysis ignorant of the geometric/spatial components of the data.</p>
+</div>
+<div id="spatial-analysis" class="section level2">
+<h2>Spatial analysis</h2>
+<p>The most common application of this data is to generate demographic maps.</p>
+<div id="density-calculationmapping" class="section level3">
+<h3>Density calculation/mapping</h3>
+</div>
+</div>
 </div>
 <div id="exporting-data-from-r" class="section level1">
 <h1>Exporting Data from R</h1>
+<p>Often, you will want to carry out data assembly in ArcGIS for export to Adobe Illustrator. To do this, we must first save our dataset as a shapefile. This is relatively easy:</p>
+<pre class="r"><code>writeOGR(bg_data,&quot;example&quot;,&quot;block_group_data&quot;,
+         driver = &quot;ESRI Shapefile&quot;,overwrite_layer = TRUE)</code></pre>
+<pre><code>## Warning in writeOGR(bg_data, &quot;example&quot;, &quot;block_group_data&quot;, driver = &quot;ESRI
+## Shapefile&quot;, : Field names abbreviated for ESRI Shapefile driver</code></pre>
 </div>
 
 
