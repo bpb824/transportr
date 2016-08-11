@@ -388,7 +388,7 @@ lodes_fetch = function(state_code,file_type,year){
 
     for(i in 1:length(year_files)){
       file = year_files[i]
-      df = read_csv(paste0("http://lehd.ces.census.gov/data/lodes/LODES7/",state_code,"/wac/",file))
+      df = read_csv(paste0("http://lehd.ces.census.gov/data/lodes/LODES7/",state_code,"/rac/",file))
       split= unlist(strsplit(file,"_",fixed=TRUE))
       seg = split[3]
       type = split[4]
