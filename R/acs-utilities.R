@@ -288,6 +288,8 @@ lodes_fetch = function(state_code,file_type,year){
   state_code = tolower(state_code)
   year = as.character(year)
 
+  print("Reading available files...")
+
   if(file_type=="OD"){
     response = httr::GET(paste0("http://lehd.ces.census.gov/data/lodes/LODES7/",state_code,"/od/"))
     page = httr::content(response,"text")
@@ -322,6 +324,7 @@ lodes_fetch = function(state_code,file_type,year){
       df$h_geocode=as.character(df$h_geocode)
       df_list[[i]]=df
       #print(i)
+      print("Downloaded file ",i," of ",length(year_files) )
     }
 
     od_data = bind_rows(df_list)
@@ -342,7 +345,7 @@ lodes_fetch = function(state_code,file_type,year){
       if(length(file)>0){
         files = c(files,file)
       }
-      print(i)
+      #print(i)
     }
 
     year_files = files[grepl(year,files)]
@@ -358,7 +361,7 @@ lodes_fetch = function(state_code,file_type,year){
       df$seg=seg
       df$type = type
       df_list[[i]]=df
-      print(i)
+      print("Downloaded file ",i," of ",length(year_files) )
     }
 
     wac_data = bind_rows(df_list)
@@ -379,7 +382,7 @@ lodes_fetch = function(state_code,file_type,year){
       if(length(file)>0){
         files = c(files,file)
       }
-      print(i)
+      #print(i)
     }
 
     year_files = files[grepl(year,files)]
@@ -395,7 +398,8 @@ lodes_fetch = function(state_code,file_type,year){
       df$seg=seg
       df$type = type
       df_list[[i]]=df
-      print(i)
+      #print(i)
+      print("Downloaded file ",i," of ",length(year_files) )
     }
 
     rac_data = bind_rows(df_list)

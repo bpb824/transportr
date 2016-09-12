@@ -54,8 +54,15 @@ exportRouteShape = function(feedPath,outPath= NULL,shapeName = NULL,writeShapefi
   routes = read.csv(paste0(feedPath,"/routes.txt"),stringsAsFactors = FALSE)
   trips = read.csv(paste0(feedPath,"/trips.txt"),stringsAsFactors = FALSE)
   #gtfs_stops = read.csv(paste0(feedPath,"/stops.txt"),stringsAsFactors = FALSE)
-
+  # unique_shapes = trips %>% distinct(route_id,direction_id,shape_id)
+  # for(i in 1:nrow(unique_shapes)){
+  #   rid = unique_shapes$route_id[i]
+  #   did = unique_shapes$direction_id[i]
+  #   sh
+  # }
+  
   shapeCoords = list()
+  
   shapeList = sort(unique(trips$shape_id))
   for (i in 1:length(shapeList)){
     shapeCoords[[as.character(shapeList[i])]]= shapes[shapes$shape_id == shapeList[i],]
@@ -79,8 +86,12 @@ exportRouteShape = function(feedPath,outPath= NULL,shapeName = NULL,writeShapefi
     shapeData$route_short_name[i]=routes$route_short_name[routes$route_id==shapeData$route_id[i]]
     shapeData$route_long_name[i]=routes$route_long_name[routes$route_id==shapeData$route_id[i]]
     shapeData$route_type[i]=routes$route_type[routes$route_id==shapeData$route_id[i]]
-    shapeData$route_url[i]=routes$route_url[routes$route_id==shapeData$route_id[i]]
-    shapeData$route_color[i]=routes$route_color[routes$route_id==shapeData$route_id[i]]
+    if("route_url" %in% colnames(routes)){
+      shapeData$route_url[i]=routes$route_url[routes$route_id==shapeData$route_id[i]]
+    }
+    if("route_color" %in% colnames(routes)){
+      shapeData$route_color[i]=routes$route_color[routes$route_id==shapeData$route_id[i]]
+    }
     #print(i)
   }
 

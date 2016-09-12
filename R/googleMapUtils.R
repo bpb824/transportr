@@ -38,18 +38,18 @@ getGoogleDirections <- function(from, to, key, mode, departure=NULL, arrival=NUL
     if(alternatives){
       url = paste0(url,"&alternatives=true")
     }
-    
+
     if(!is.null(transit_rt_pref)){
       if(!(transit_rt_pref %in% c("less_walking","fewer_transfers"))){
         stop("check transit_rt_pref input")
       }
       url = paste0(url,"&transit_routing_preference=",transit_rt_pref)
     }
-    
+
     if(!is.null(traffic_model)){
       url = paste0(url,"&traffic_model=",traffic_model)
     }
-    
+
 
     return(rjson::fromJSON(paste(readLines(url), collapse="")))
   }else{
@@ -85,6 +85,178 @@ getGoogleDirections <- function(from, to, key, mode, departure=NULL, arrival=NUL
 
 
 }
+
+# origin = geocode_place("LinkedIn Sunnyvale CA",key = key)
+# key = "AIzaSyBzI5JMg7dcJk7HhBa8u-2MKG8rBKOqd94"
+# mode = "driving"
+# departure = as.numeric(as.POSIXct("2016-09-06 8:30:00"))
+# num_angles = 30
+# duration = 60
+# tolerance = 0.1
+# sleep = 0.5
+
+isochrone = function(origin, mode, departure, in_traffic=TRUE,key,
+                     max_iterations = 15,num_angles,tolerance,duration,
+                     sleep,ray_search_int = 0.25){
+
+  base_url = "https://maps.googleapis.com/maps/api/distancematrix/json?origins="
+
+  #Add origin to url
+  url = paste0(base_url,paste0(origin,collapse = ","))
+
+  #Add key to url
+  url = paste0(url, "&key=",key)
+
+  #Add mode to url
+  url = paste0(url, "&mode=",mode)
+
+  #Add departure time to url
+  url = paste0(url,"&departure_time=",departure)
+
+  #Add traffic model to url
+  url = paste0(url,"&traffic_model=best_guess")
+
+  #Add destinations to url
+
+  rad2deg <- function(rad) {(rad * 180) / (pi)}
+  deg2rad <- function(deg) {(deg * pi) / (180)}
+
+  qFrame = data.frame(matrix(nrow=num_angles,ncol=4))
+  colnames(qFrame)=c("lat","lng","dist_mi","tt_min")
+  qFrame[,c("lat","lng")]=0
+
+  rad1 = rep(duration/12,num_angles) # initial r guess based on 5 mph speed
+  phi1=vector()
+  for(i in 1:num_angles){
+    phi1[i] = i *(360/num_angles)
+  }
+  data0 = data.frame(matrix(nrow=num_angles,ncol=2))
+  colnames(data0)=c("lat","lng")
+  data0[,]=0
+  rad0 = rep(0,num_angles)
+  rmin = rep(0, num_angles)
+  rmax = rep(1.25 * duration,num_angles)  # rmax based on 75 mph speed
+  
+  search_frame = data_frame(ray_id = rep(1:num_angles,max_iterations),
+                            search_id = expand_id_col(1:max_iterations,num_angles),
+                            lat=NA,lng=NA,tt_min=NA,bound_flag = NA)
+
+  select_destination = function(origin,angle,radius){
+    r = 3963.1676
+    bearing = deg2rad(angle)
+    lat1 = deg2rad(origin[1])
+    lng1 = deg2rad(origin[2])
+    lat2 = asin(sin(lat1) * cos(radius / r) + cos(lat1) * sin(radius / r) * cos(bearing))
+    lng2 = lng1 + atan2(sin(bearing) * sin(radius / r) * cos(lat1), cos(radius / r) - sin(lat1) * sin(lat2))
+    lat2 = rad2deg(lat2)
+    lng2 = rad2deg(lng2)
+    guess_loc = c(lat2,lng2)
+    gurl = paste0("https://maps.googleapis.com/maps/api/geocode/json?latlng=",paste(guess_loc,collapse = ","),"&key=",key)
+    response = httr::content(httr::GET(gurl),as = "parsed", type ="application/json")
+    if(response$status=="OK"){
+      nearest = unlist(response$results[[1]]$geometry$location)
+    }else{
+      nearest = NULL
+    }
+    return(nearest)
+  }
+
+
+  j = 1
+  while(sum((rad1-rad0)==0)!=num_angles){
+
+    for(i in 1:num_angles){
+      Sys.sleep(sleep/10)
+      loc = select_destination(origin,phi1[i],rad1[i])
+      if(!is.null(loc)){
+        data0[i,c("lat","lng")]=loc
+        search_frame[search_frame$ray_id==i & search_frame$search_id==j, c("lat","lng")]=loc
+      }else{
+        loc_null=TRUE
+        rad_guess= rad1[i]-ray_search_int
+        while(loc_null){
+          guess_loc = select_destination(origin,phi1[i],rad_guess)
+          if(is.null(guess_loc)){
+            rad_guess=rad_guess-ray_search_int
+          }
+          else{
+            loc_null=FALSE
+            data0[i,c("lat","lng")]=guess_loc
+            search_frame[search_frame$ray_id==i & search_frame$search_id==j, c("lat","lng")]=guess_loc
+            search_frame$bound_flag[search_frame$ray_id==i & search_frame$search_id==j]=1
+          }
+        }
+      }
+      
+    }
+
+    query_url = paste0(url,"&destinations=")
+    for(i in 1:(num_angles-1)){
+      query_url = paste0(query_url,paste(data0[i,c("lat","lng")],collapse = ","),"|")
+    }
+    query_url = paste0(query_url,paste(data0[num_angles,c("lat","lng")],collapse = ","))
+
+    response = httr::content(httr::GET(query_url),as = "parsed", type ="application/json")
+    
+    for(i in 1:num_angles){
+      if(response$rows[[1]]$elements[[i]]$status=="OK"){
+        qFrame$dist_mi[i]=response$rows[[1]]$elements[[i]]$distance$value*0.000621371
+        qFrame$tt_min[i]=response$rows[[1]]$elements[[i]]$duration_in_traffic$value/60
+        search_frame[search_frame$ray_id==i & search_frame$search_id==j, "tt_min"] = response$rows[[1]]$elements[[i]]$duration_in_traffic$value/60
+      }else{
+        qFrame$tt_min[i]=999
+      }
+    }
+
+    rad2 =rep(0, num_angles)
+    
+    for (i in 1:num_angles){
+      if(is.na(qFrame$tt_min[i])){
+        rad2[i] = (rmin[i] + rad1[i]) / 2
+        rmax[i] = rad1[i]
+      }else if (qFrame$tt_min[i] < (duration - tolerance) & (sum(data0[i,c("lat","lng")] != qFrame[i,c("lat","lng")])>0)){
+        rad2[i] = (rmax[i] + rad1[i]) / 2
+        rmin[i] = rad1[i]
+      }else if (qFrame$tt_min[i] > (duration + tolerance) & (sum(data0[i,c("lat","lng")] != qFrame[i,c("lat","lng")])>0)){
+        rad2[i] = (rmin[i] + rad1[i]) / 2
+        rmax[i] = rad1[i]
+      }else{
+        rad2[i] = rad1[i]
+      }
+      qFrame[i,c("lat","lng")] = data0[i,c("lat","lng")]
+    }
+    rad0 = rad1
+    rad1 = rad2
+
+    Sys.sleep(sleep)
+    print(paste0("Iteration number ",j))
+    
+    
+    j = j+1
+    
+    #print(j)
+    #print(qFrame$tt_min[30])
+    if(j>max_iterations){
+      break
+    }
+  }
+  
+  
+  #Second pass 
+  for(i in 1:nrow(qFrame)){
+    if(qFrame$tt_min[i]>(duration+tolerance)){
+      poss = search_frame %>% filter(ray_id==i,tt_min<(duration+tolerance)) %>% arrange(desc(tt_min),desc(search_id))
+      qFrame[i,c("lat","lng")] = poss[1,c("lat","lng")]
+      qFrame$tt_min[i]=poss$tt_min[1]
+    }
+  }
+  
+  
+  return(qFrame)
+}
+
+# leaflet() %>% addProviderTiles("CartoDB.Positron") %>%
+#   addPolygons(lat=qFrame$lat,lng = qFrame$lng)
 
 #' Convert Google directions to Spatial Object
 #'
