@@ -21,7 +21,7 @@ fetchFeed = function(feedName,outDir="."){
   }else if(length(test)==1){
     operator = names[test]
     meta = gtfsFeeds$operators[[test]]
-    id = meta$imported_from_feed_onestop_ids[[1]]
+    id = meta$represented_in_feed_onestop_ids[[1]]
     url = paste0("https://transit.land/api/v1/feeds/",id)
     feedInfo = httr::content(httr::GET(url),as = "parsed", type ="application/json")
     feed_url = feedInfo$url

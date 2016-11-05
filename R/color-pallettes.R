@@ -21,7 +21,8 @@ color_palette = function(n,type="cat",palette = "Nelson Nygaard"){
     if(type=="cat"){
       all_colors = c(color_set$blue,color_set$red,
                      color_set$citron,color_set$plum,
-                     color_set$orange,color_set$cocoa)
+                     color_set$orange,color_set$cocoa,
+                     color_set$sand)
 
     }else if (type=="seq"){
 

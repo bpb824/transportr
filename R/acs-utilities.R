@@ -24,7 +24,7 @@ transit_pops = function(geog,endyear=2014, span=5){
   results = tbl_df(base_geog)
 
   results$total_pop = data$`Total Population: Total`
-  print(paste0(round(1/8*100,0),"% done with queries"))
+  print(paste0(round(1/10*100,0),"% done with queries"))
 
   #Low Income
   tid = "C17002"
@@ -40,7 +40,24 @@ transit_pops = function(geog,endyear=2014, span=5){
 
   results$low_income_prop = props$below_150_prop
   results$low_income_n = props$below_150
-  print(paste0(round(2/8*100,0),"% done with queries"))
+  print(paste0(round(2/10*100,0),"% done with queries"))
+  
+  #Renters
+  tid = "B11012"
+  result = acs.fetch(endyear = endyear,span=span,geography=geog,table.number =tid,col.names = "pretty")
+  data = as_data_frame(result@estimate)
+  sub = data %>% dplyr::select(`HOUSEHOLD TYPE BY TENURE: Total:`,contains("Renter"))
+  sub$geography = names
+  props = sub %>% dplyr::rename(total=`HOUSEHOLD TYPE BY TENURE: Total:`) %>%
+    gather(key,value,-geography,-total) %>%
+    distinct() %>%
+    dplyr::group_by(geography,total) %>% dplyr::summarise(renters = sum(value)) %>%
+    dplyr::ungroup() %>%
+    dplyr::mutate(renter_prop = renters/total)
+   
+  results = results %>% left_join(props %>% dplyr::select(geography,renter_prop,renters) %>%
+                                    dplyr::rename(renter_n=renters,NAME=geography),by="NAME")
+  print(paste0(round(3/10*100,0),"% done with queries"))
 
   #Older Adults
   tid = "B01001"
@@ -59,7 +76,7 @@ transit_pops = function(geog,endyear=2014, span=5){
 
   results = results %>% left_join(props %>% dplyr::select(geography,old_prop,old) %>%
                                     dplyr::rename(older_adults_prop=old_prop,older_adults_n=old,NAME=geography),by="NAME")
-  print(paste0(round(3/8*100,0),"% done with queries"))
+  print(paste0(round(4/10*100,0),"% done with queries"))
 
   #Youth 10-17
   tid = "B01001"
@@ -75,8 +92,25 @@ transit_pops = function(geog,endyear=2014, span=5){
     dplyr::ungroup() %>% dplyr::mutate(young_prop = young/total)
 
   results = results %>% left_join(props %>% dplyr::select(geography,young_prop,young) %>%
-                                    dplyr::rename(youth_prop=young_prop,youth_n=young,NAME=geography),by="NAME")
-  print(paste0(round(4/8*100,0),"% done with queries"))
+                                    dplyr::rename(youth_10.17_prop=young_prop,youth_10.17_n=young,NAME=geography),by="NAME")
+  print(paste0(round(5/10*100,0),"% done with queries"))
+  
+  #Youth 18-21
+  tid = "B01001"
+  result = acs.fetch(endyear = endyear,span=span,geography=geog,table.number =tid,col.names = "pretty")
+  data = as_data_frame(result@estimate)
+  sub = data %>% dplyr::select(contains("Total"), contains("18"), contains("20"),contains("21"))
+  sub$geography = names
+  props= sub %>% dplyr::rename(total=`Sex by Age: Total:`) %>%
+    tidyr::gather(key,value,-geography,-total) %>%
+    dplyr::distinct() %>%
+    dplyr::select(-key) %>%
+    dplyr::group_by(geography,total) %>% dplyr::summarise(young = sum(value))  %>%
+    dplyr::ungroup() %>% dplyr::mutate(young_prop = young/total)
+  
+  results = results %>% left_join(props %>% dplyr::select(geography,young_prop,young) %>%
+                                    dplyr::rename(youth_18.21_prop=young_prop,youth_18.21_n=young,NAME=geography),by="NAME")
+  print(paste0(round(6/10*100,0),"% done with queries"))
 
   #College Age 18-24
   tid = "B01001"
@@ -94,7 +128,7 @@ transit_pops = function(geog,endyear=2014, span=5){
 
   results = results %>% left_join(props %>% dplyr::select(geography,young_prop,young) %>%
                                     dplyr::rename(college_age_prop=young_prop,college_age_n=young,NAME=geography),by="NAME")
-  print(paste0(round(5/8*100,0),"% done with queries"))
+  print(paste0(round(7/10*100,0),"% done with queries"))
 
   #Persons with disabilities
   tid = "C21007"
@@ -111,7 +145,7 @@ transit_pops = function(geog,endyear=2014, span=5){
 
   results = results %>% left_join(props %>% dplyr::select(geography,disabled_prop,disabled) %>%
                                     dplyr::rename(pwd_18up_prop=disabled_prop,pwd_18up_n=disabled,NAME=geography),by="NAME")
-  print(paste0(round(6/8*100,0),"% done with queries"))
+  print(paste0(round(8/10*100,0),"% done with queries"))
 
   #Households without Vehicles
   tid = "B25044"
@@ -128,7 +162,7 @@ transit_pops = function(geog,endyear=2014, span=5){
 
   results = results %>% left_join(props %>% dplyr::select(geography,zero_vehicles_prop,zero_vehicles) %>%
                                     dplyr::rename(no_vehicles_hh_prop=zero_vehicles_prop, no_vehicles_hh_n=zero_vehicles,NAME=geography),by="NAME")
-  print(paste0(round(7/8*100,0),"% done with queries"))
+  print(paste0(round(9/10*100,0),"% done with queries"))
 
   #Limited English
   tid = "B16004"
@@ -145,7 +179,7 @@ transit_pops = function(geog,endyear=2014, span=5){
 
   results = results %>% left_join(props %>% dplyr::select(geography,no_english_prop,no_english) %>%
                                     dplyr::rename(lep_prop=no_english_prop,lep_n=no_english,NAME=geography),by="NAME")
-  print(paste0(round(8/8*100,0),"% done with queries"))
+  print(paste0(round(10/10*100,0),"% done with queries"))
 
   return(results)
 }
@@ -315,16 +349,19 @@ lodes_fetch = function(state_code,file_type,year){
     for(i in 1:length(year_files)){
       file = year_files[i]
       df = read_csv(paste0("http://lehd.ces.census.gov/data/lodes/LODES7/",state_code,"/od/",file))
-      split = unlist(strsplit(file,"_",fixed=TRUE))
-      part = split[3]
-      type = split[4]
-      df$part=part
-      df$type = type
-      df$w_geocode= as.character(df$w_geocode)
-      df$h_geocode=as.character(df$h_geocode)
-      df_list[[i]]=df
+      if(nrow(df)>0){
+        split = unlist(strsplit(file,"_",fixed=TRUE))
+        part = split[3]
+        type = split[4]
+        df$part=part
+        df$type = type
+        df$w_geocode= as.character(df$w_geocode)
+        df$h_geocode=as.character(df$h_geocode)
+        df_list[[i]]=df
+      }
+      
       #print(i)
-      print("Downloaded file ",i," of ",length(year_files) )
+      print(paste0("Downloaded file ",i," of ",length(year_files) ))
     }
 
     od_data = bind_rows(df_list)
@@ -352,16 +389,18 @@ lodes_fetch = function(state_code,file_type,year){
 
     df_list = list()
 
-    for(i in 1:length(year_files)){
+    for(i in 47:length(year_files)){
       file = year_files[i]
       df = read_csv(paste0("http://lehd.ces.census.gov/data/lodes/LODES7/",state_code,"/wac/",file))
-      split= unlist(strsplit(file,"_",fixed=TRUE))
-      seg = split[3]
-      type = split[4]
-      df$seg=seg
-      df$type = type
-      df_list[[i]]=df
-      print("Downloaded file ",i," of ",length(year_files) )
+      if(nrow(df)>0){
+        split= unlist(strsplit(file,"_",fixed=TRUE))
+        seg = split[3]
+        type = split[4]
+        df$seg=seg
+        df$type = type
+        df_list[[i]]=df
+      }
+      print(paste0("Downloaded file ",i," of ",length(year_files) ))
     }
 
     wac_data = bind_rows(df_list)
@@ -392,14 +431,16 @@ lodes_fetch = function(state_code,file_type,year){
     for(i in 1:length(year_files)){
       file = year_files[i]
       df = read_csv(paste0("http://lehd.ces.census.gov/data/lodes/LODES7/",state_code,"/rac/",file))
-      split= unlist(strsplit(file,"_",fixed=TRUE))
-      seg = split[3]
-      type = split[4]
-      df$seg=seg
-      df$type = type
-      df_list[[i]]=df
-      #print(i)
-      print("Downloaded file ",i," of ",length(year_files) )
+      if(nrow(df)>0){
+        split= unlist(strsplit(file,"_",fixed=TRUE))
+        seg = split[3]
+        type = split[4]
+        df$seg=seg
+        df$type = type
+        df_list[[i]]=df
+        #print(i)
+      }
+      print(paste0("Downloaded file ",i," of ",length(year_files) ))
     }
 
     rac_data = bind_rows(df_list)

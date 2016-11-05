@@ -573,11 +573,17 @@ geocode_place= function(placeString,key,output="loc"){
   base_url = "https://maps.googleapis.com/maps/api/place/textsearch/json?query="
   query = paste0(base_url,place,"&key=",key)
   response = httr::content(httr::GET(query),as = "parsed", type ="application/json")
-  if(output=="loc"){
-    return(unlist(response$results[[1]]$geometry$location))
-  }else if(output=="all"){
-    return(response)
+  if(response$status=="OK"){
+    if(output=="loc"){
+      return(unlist(response$results[[1]]$geometry$location))
+    }else if(output=="all"){
+      return(response)
+    }
+  }else{
+    message("no results found")
+    return(c(NA,NA))
   }
+  
 }
 
 
