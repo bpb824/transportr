@@ -318,7 +318,7 @@ lodes_crosswalk = function(state_code){
 #'
 #' @return Data frame containing all LODES data requested
 #' @export
-lodes_fetch = function(state_code,file_type,year){
+lodes_fetch = function(state_code,file_type,year,job_type=NULL){
   state_code = tolower(state_code)
   year = as.character(year)
 
@@ -328,13 +328,13 @@ lodes_fetch = function(state_code,file_type,year){
     response = httr::GET(paste0("http://lehd.ces.census.gov/data/lodes/LODES7/",state_code,"/od/"))
     page = httr::content(response,"text")
     parsed = xml2::read_html(page)
-    body = xml_child(parsed,2)
-    table = xml_contents(xml_child(body,"table"))
+    body = xml2::xml_child(parsed,2)
+    table =xml2::xml_contents(xml2::xml_child(body,"table"))
     files = vector()
     for(i in 1:length(table)){
       file = character()
-      content = xml_contents(table[[i]])
-      text =xml_text(content)
+      content = xml2::xml_contents(table[[i]])
+      text =xml2::xml_text(content)
       file = text[grepl("csv",text)]
       if(length(file)>0){
         files = c(files,file)
@@ -343,6 +343,9 @@ lodes_fetch = function(state_code,file_type,year){
     }
 
     year_files = files[grepl(year,files)]
+    if(!is.null(job_type)){
+      year_files = year_files[grepl(job_type,year_files)]
+    }
 
     df_list = list()
 
@@ -371,13 +374,13 @@ lodes_fetch = function(state_code,file_type,year){
     response = httr::GET(paste0("http://lehd.ces.census.gov/data/lodes/LODES7/",state_code,"/wac/"))
     page = httr::content(response,"text")
     parsed = xml2::read_html(page)
-    body = xml_child(parsed,2)
-    table = xml_contents(xml_child(body,"table"))
+    body = xml2::xml_child(parsed,2)
+    table = xml2::xml_contents(xml2::xml_child(body,"table"))
     files = vector()
     for(i in 1:length(table)){
       file = character()
-      content = xml_contents(table[[i]])
-      text =xml_text(content)
+      content = xml2::xml_contents(table[[i]])
+      text =xml2::xml_text(content)
       file = text[grepl("csv",text)]
       if(length(file)>0){
         files = c(files,file)
@@ -386,10 +389,13 @@ lodes_fetch = function(state_code,file_type,year){
     }
 
     year_files = files[grepl(year,files)]
+    if(!is.null(job_type)){
+      year_files = year_files[grepl(job_type,year_files)]
+    }
 
     df_list = list()
 
-    for(i in 47:length(year_files)){
+    for(i in 1:length(year_files)){
       file = year_files[i]
       df = read_csv(paste0("http://lehd.ces.census.gov/data/lodes/LODES7/",state_code,"/wac/",file))
       if(nrow(df)>0){
@@ -410,13 +416,13 @@ lodes_fetch = function(state_code,file_type,year){
     response = httr::GET(paste0("http://lehd.ces.census.gov/data/lodes/LODES7/",state_code,"/rac/"))
     page = httr::content(response,"text")
     parsed = xml2::read_html(page)
-    body = xml_child(parsed,2)
-    table = xml_contents(xml_child(body,"table"))
+    body = xml2::xml_child(parsed,2)
+    table = xml2::xml_contents(xml2::xml_child(body,"table"))
     files = vector()
     for(i in 1:length(table)){
       file = character()
-      content = xml_contents(table[[i]])
-      text =xml_text(content)
+      content = xml2::xml_contents(table[[i]])
+      text =xml2::xml_text(content)
       file = text[grepl("csv",text)]
       if(length(file)>0){
         files = c(files,file)
@@ -425,6 +431,9 @@ lodes_fetch = function(state_code,file_type,year){
     }
 
     year_files = files[grepl(year,files)]
+    if(!is.null(job_type)){
+      year_files = year_files[grepl(job_type,year_files)]
+    }
 
     df_list = list()
 

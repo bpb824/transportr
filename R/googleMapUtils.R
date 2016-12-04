@@ -586,6 +586,33 @@ geocode_place= function(placeString,key,output="loc"){
   
 }
 
+#' Geocode a location string using Google Places API
+#'
+#' @param placeString A string describing the place you'd like to geocode
+#' @param output  The output can either be a simple location ('loc') or a list with all response results ('all')
+#'
+#' @return Location or list of API results
+#' @export
+geocode_loc= function(placeString,key,output="loc"){
+  
+  place = gsub(" ","+",placeString)
+  base_url = "https://maps.googleapis.com/maps/api/geocode/json?address="
+  query = paste0(base_url,place,"&key=",key)
+  response = httr::content(httr::GET(query),as = "parsed", type ="application/json")
+  if(response$status=="OK"){
+    if(output=="loc"){
+      return(unlist(response$results[[1]]$geometry$location))
+    }else if(output=="all"){
+      return(response)
+    }
+  }else{
+    message("no results found")
+    return(c(NA,NA))
+  }
+  
+}
+
+
 
 
 #' Convert SpatialLines to coordinate data frame for map matching.
