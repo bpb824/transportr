@@ -68,10 +68,14 @@ exportRouteShape = function(feedPath,outPath= NULL,shapeName = NULL,writeShapefi
     shapeCoords[[as.character(shapeList[i])]]= shapes[shapes$shape_id == shapeList[i],]
   }
   lineList = list()
+  sc = 1
   for (i in 1:length(shapeCoords)){
     id = names(shapeCoords[i])
-    shape = sp::Line(as.data.frame(shapeCoords[[i]])[,c("shape_pt_lon",c("shape_pt_lat"))])
-    lineList[[i]]= sp::Lines(list(sp::Line(shape)),id)
+    if(nrow(shapeCoords[[i]])>0){
+      shape = sp::Line(as.data.frame(shapeCoords[[i]])[,c("shape_pt_lon",c("shape_pt_lat"))])
+      lineList[[sc]]= sp::Lines(list(sp::Line(shape)),id)
+      sc = sc+1
+    }
   }
   transitShapes = sp::SpatialLines(lineList, sp::CRS("+init=epsg:4326"))
 
