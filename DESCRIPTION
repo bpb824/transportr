@@ -5,8 +5,7 @@ Version: 0.1.0
 Authors@R: c(person("Bryan","Blanc",role = c("aut","cre"), email = "bryanpblanc@gmail.com"))
 Author: Bryan Blanc
 Maintainer: <bryanpblanc@gmail.com>
-Description: Tools for querying, managing, exploring, and analyzing
-    transportation and urban planning data.
+Description: Tools for querying, managing, exploring, and analyzing transportation and urban planning data.
 License: GPL-3
 LazyData: TRUE
 Imports:
