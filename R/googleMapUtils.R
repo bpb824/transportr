@@ -323,83 +323,87 @@ gDirsToShape= function(googleDirs,mode){
     DecodeLine <- decodeLineR
   }
 
-  routes = googleDirs$routes
+  routes = googleDirs
   routeList = list()
   idCount = 0
 
   if(mode=="transit"){
     for(i in 1:length(routes)){
-      route = routes[[i]]
-      leg = route$legs[[1]]
-      steps = leg$steps
-      lineList = list()
-      route_data = data.frame(matrix(nrow=length(steps),ncol =6))
-      colnames(route_data)=c("step_id","distance_mi","duration_min","description","transit_details",
-                             "route_id")
-      route_data$route_id=i
-      rownames(route_data)=as.character(idCount:(idCount+nrow(route_data)-1))
-      for(j in 1:length(steps)){
-        step = steps[[j]]
-        line_string = step$polyline$points
-        poly = DecodeLine(line_string)
-        polyLine = sp::Lines(sp::Line(cbind(poly$lng,poly$lat)),idCount)
-        lineList[[j]]=polyLine
-        route_data$step_id[j]=j
-        route_data$distance_mi[j]=step$distance$value*0.000621371
-        route_data$duration_min[j]=step$duration$value/60
-        route_data$description[j]=step$html_instructions
-        route_data$link_code[j] = line_string
-        if("transit_details" %in% names(step)){
-          route_data$transit_details[j]=paste0(step$transit_details$line$short_name," (",
-                                               step$transit_details$line$name,")")
-        }else{
-          route_data$transit_details[j]=NA
+      if(routes[[i]]$status=="OK"){
+        route = routes[[i]]$routes[[1]]
+        leg = route$legs[[1]]
+        steps = leg$steps
+        lineList = list()
+        route_data = data.frame(matrix(nrow=length(steps),ncol =6))
+        colnames(route_data)=c("step_id","distance_mi","duration_min","description","transit_details",
+                               "route_id")
+        route_data$route_id=i
+        rownames(route_data)=as.character(idCount:(idCount+nrow(route_data)-1))
+        for(j in 1:length(steps)){
+          step = steps[[j]]
+          line_string = step$polyline$points
+          poly = DecodeLine(line_string)
+          polyLine = sp::Lines(sp::Line(cbind(poly$lng,poly$lat)),idCount)
+          lineList[[j]]=polyLine
+          route_data$step_id[j]=j
+          route_data$distance_mi[j]=step$distance$value*0.000621371
+          route_data$duration_min[j]=step$duration$value/60
+          route_data$description[j]=step$html_instructions
+          route_data$link_code[j] = line_string
+          if("transit_details" %in% names(step)){
+            route_data$transit_details[j]=paste0(step$transit_details$line$short_name," (",
+                                                 step$transit_details$line$name,")")
+          }else{
+            route_data$transit_details[j]=NA
+          }
+          
+          idCount= idCount+1
         }
-
-        idCount= idCount+1
+        polyShape = sp::SpatialLines(lineList,sp::CRS("+init=epsg:4326"))
+        polyShapeDF = sp::SpatialLinesDataFrame(polyShape,route_data,match.ID = FALSE)
+        routeList[[i]]=polyShapeDF
       }
-      polyShape = sp::SpatialLines(lineList,sp::CRS("+init=epsg:4326"))
-      polyShapeDF = sp::SpatialLinesDataFrame(polyShape,route_data,match.ID = FALSE)
-      routeList[[i]]=polyShapeDF
+      print(paste0("Decoded route ",i," of ",length(routes)))
     }
   }else{
+    
+    route_df_list = list()
+    route_shp_list = list()
+    idCount=1
     for(i in 1:length(routes)){
-      route = routes[[i]]
-      leg = route$legs[[1]]
-      steps = leg$steps
-      lineList = list()
-      route_data = data.frame(matrix(nrow=length(steps),ncol =5))
-      colnames(route_data)=c("step_id","distance_mi","duration_min","description","route_id")
-      route_data$route_id=i
-      rownames(route_data)=as.character(idCount:(idCount+nrow(route_data)-1))
-      for(j in 1:length(steps)){
-        step = steps[[j]]
-        line_string = step$polyline$points
-        poly = DecodeLine(line_string)
-        polyLine = sp::Lines(sp::Line(cbind(poly$lng,poly$lat)),idCount)
-        lineList[[j]]=polyLine
-        route_data$step_id[j]=j
-        route_data$distance_mi[j]=step$distance$value*0.000621371
-        route_data$duration_min[j]=step$duration$value/60
-        route_data$description[j]=step$html_instructions
-        route_data$link_code[j] = line_string
-        idCount= idCount+1
+      if(routes[[i]]$status=="OK"){
+        route = routes[[i]]$routes[[1]]
+        leg = route$legs[[1]]
+        steps = leg$steps
+        lineList = list()
+        route_data = data.frame(matrix(nrow=length(steps),ncol =5))
+        colnames(route_data)=c("step_id","distance_mi","duration_min","description","route_id")
+        route_data$route_id=i
+        rownames(route_data)=as.character(idCount:(idCount+nrow(route_data)-1))
+        for(j in 1:length(steps)){
+          step = steps[[j]]
+          line_string = step$polyline$points
+          poly = DecodeLine(line_string)
+          polyLine = sp::Lines(sp::Line(cbind(poly$lng,poly$lat)),idCount)
+          route_shp_list[[idCount]]=polyLine
+          route_data$step_id[j]=j
+          route_data$distance_mi[j]=step$distance$value*0.000621371
+          route_data$duration_min[j]=step$duration$value/60
+          route_data$description[j]=step$html_instructions
+          route_data$link_code[j] = line_string
+          idCount= idCount+1
+        }
+        route_df_list[[i]]=route_data
       }
-      polyShape = sp::SpatialLines(lineList,sp::CRS("+init=epsg:4326"))
-      polyShapeDF = sp::SpatialLinesDataFrame(polyShape,route_data,match.ID = TRUE)
-      routeList[[i]]=polyShapeDF
+      print(paste0("Decoded route ",i," of ",length(routes)))
     }
+    route_df = bind_rows(route_df_list)
+    polyShape = sp::SpatialLines(route_shp_list,sp::CRS("+init=epsg:4326"))
+    polyShapeDF = sp::SpatialLinesDataFrame(polyShape[1:nrow(route_df),],route_df,match.ID = TRUE)
   }
+  bike_sf = st_as_sf(polyShapeDF)
 
-  routeShape = routeList[[1]]
-  if(length(routeList)>1){
-    for(i in 2:length(routeList)){
-      routeShape = maptools::spRbind(routeShape,routeList[[i]])
-    }
-  }
-
-  return(routeShape)
-
+  return(bike_sf)
 }
 
 #' Title

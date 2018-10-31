@@ -15,9 +15,8 @@ fetchFeed = function(feedName,outDir="."){
   names =unlist(lapply(gtfsFeeds$operators,function(x) x$name))
   test = grep(tolower(feedName), tolower(names))
 
-
   if(length(test)==0){
-    stop("Could not find the feed you are looking for. The available feeds are listed here: http://www.gtfs-data-exchange.com/agencies")
+    stop("Could not find the feed you are looking for. The available feeds are listed here: https://transit.land/feed-registry/")
   }else if(length(test)==1){
     operator = names[test]
     meta = gtfsFeeds$operators[[test]]
@@ -50,16 +49,12 @@ fetchFeed = function(feedName,outDir="."){
 #' @return Returns route shape as SpatialLinesDataFrame if desired
 #' @export
 exportRouteShape = function(feedPath,outPath= NULL,shapeName = NULL,writeShapefile=FALSE){
+  
+  #feedPath="R/Translink GTFS"
+  
   shapes = read.csv(paste0(feedPath,"/shapes.txt"),stringsAsFactors = FALSE)
   routes = read.csv(paste0(feedPath,"/routes.txt"),stringsAsFactors = FALSE)
   trips = read.csv(paste0(feedPath,"/trips.txt"),stringsAsFactors = FALSE)
-  #gtfs_stops = read.csv(paste0(feedPath,"/stops.txt"),stringsAsFactors = FALSE)
-  # unique_shapes = trips %>% distinct(route_id,direction_id,shape_id)
-  # for(i in 1:nrow(unique_shapes)){
-  #   rid = unique_shapes$route_id[i]
-  #   did = unique_shapes$direction_id[i]
-  #   sh
-  # }
   
   shapeCoords = list()
   
@@ -72,12 +67,24 @@ exportRouteShape = function(feedPath,outPath= NULL,shapeName = NULL,writeShapefi
   for (i in 1:length(shapeCoords)){
     id = names(shapeCoords[i])
     if(nrow(shapeCoords[[i]])>0){
-      shape = sp::Line(as.data.frame(shapeCoords[[i]])[,c("shape_pt_lon",c("shape_pt_lat"))])
-      lineList[[sc]]= sp::Lines(list(sp::Line(shape)),id)
+      
+      shape_frame = shapeCoords[[i]] %>%
+        arrange(shape_pt_sequence)
+      
+      linestring =  sf::st_linestring(as.matrix(shape_frame[,c("shape_pt_lon",c("shape_pt_lat"))]))
+      #shape = sp::Line(as.data.frame(shapeCoords[[i]])[,c("shape_pt_lon",c("shape_pt_lat"))])
+      #lineList[[sc]]= sp::Lines(list(sp::Line(shape)),id)
+      lineList[[sc]]= linestring
       sc = sc+1
     }
   }
-  transitShapes = sp::SpatialLines(lineList, sp::CRS("+init=epsg:4326"))
+  
+  transitShapes =  sf::st_sfc(lineList,crs=4326)
+  # transitShapes = sf::st_sf(feature=sf::st_sfc(lineList,crs = 4326),
+  #                           shape_id=shape_ids,relation_to_geometry = c("field"),
+  #                           stringsAsFactors = FALSE) %>%
+  #   mutate(shape_id = as.numeric(shape_id))
+  #transitShapes = sp::SpatialLines(lineList, sp::CRS("+init=epsg:4326"))
 
   shapeIds = sort(unique(trips$shape_id))
   shapeData = data.frame(matrix(nrow = length(shapeIds),ncol =8))
@@ -101,16 +108,20 @@ exportRouteShape = function(feedPath,outPath= NULL,shapeName = NULL,writeShapefi
 
   shapeData = shapeData %>%
     mutate(route_color=ifelse(nchar(route_color)==0,"#00659A",paste0("#",route_color)))
-
-  rownames(shapeData)=shapeData$shape_id
-
-  route_shape = sp::SpatialLinesDataFrame(transitShapes,data.frame(shapeData))
-
+  
+  shape_sf = sf::st_sf(shapeData,geometry=transitShapes)
+  
+  # leaflet() %>%
+  #   addProviderTiles("CartoDB.Positron") %>%
+  #   addPolylines(data=shape_sf)
+   
   if(writeShapefile==TRUE){
-    rgdal::writeOGR(route_shape,outPath,shapeName,overwrite_layer = TRUE,driver = "ESRI Shapefile")
+    sf::st_write(shape_sf,outPath,shapeName,
+                 driver = "ESRI Shapefile",layer_options = "OVERWRITE=true")
+    #rgdal::writeOGR(route_shape,outPath,shapeName,overwrite_layer = TRUE,driver = "ESRI Shapefile")
   }
 
-  return(route_shape)
+  return(shape_sf)
 }
 
 #' Export GTFS stops to ESRI shapefile
@@ -124,14 +135,14 @@ exportRouteShape = function(feedPath,outPath= NULL,shapeName = NULL,writeShapefi
 #' @export
 exportStopShape = function(feedPath,outPath= NULL,shapeName = NULL,writeShapefile=FALSE){
   stops = read.csv(paste0(feedPath,"/stops.txt"),stringsAsFactors = FALSE)
-  sp::coordinates(stops)=~stop_lon+stop_lat
-  stops@proj4string= sp::CRS("+init=epsg:4326")
-
+  
+  stop_shape = sf::st_as_sf(stops,coords = c("stop_lon","stop_lat"),crs=4326)
+  
   if(writeShapefile==TRUE){
-    rgdal::writeOGR(stops,outPath,shapeName,overwrite_layer = TRUE,driver = "ESRI Shapefile")
+    sf::st_write(stop_shape,outPath,shapeName,
+                 driver = "ESRI Shapefile",layer_options = "OVERWRITE=true")
   }
-  return(stops)
-
+  return(stop_shape)
 }
 
 #' Import GTFS tables into a single Excel file

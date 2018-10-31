@@ -8,7 +8,7 @@
 #'
 #' @return Dataframe with transit dependent population statistics.
 #' @export
-transit_pops = function(geog,endyear=2014, span=5){
+transit_pops = function(geog,endyear=2015, span=5, poverty_line = "150%"){
   require(dplyr,quietly = TRUE)
   require(acs, quietly = TRUE)
   require(tidyr,quietly = TRUE)
@@ -24,40 +24,72 @@ transit_pops = function(geog,endyear=2014, span=5){
   results = tbl_df(base_geog)
 
   results$total_pop = data$`Total Population: Total`
-  print(paste0(round(1/10*100,0),"% done with queries"))
+  print(paste0(round(1/11*100,0),"% done with queries"))
 
   #Low Income
   tid = "C17002"
   result = acs.fetch(endyear = endyear,span=span,geography=geog,table.number =tid,col.names = "pretty")
   data = as_data_frame(result@estimate)
-  sub = data[,1:5]
-  props = sub %>% dplyr::rename(total=`Ratio of Income to Poverty Level in the Past 12 Months: Total:`) %>%
-    dplyr::mutate(below_150= `Ratio of Income to Poverty Level in the Past 12 Months: Under .50`+
-             `Ratio of Income to Poverty Level in the Past 12 Months: .50 to .99`+
-             `Ratio of Income to Poverty Level in the Past 12 Months: 1.00 to 1.24`+
-             `Ratio of Income to Poverty Level in the Past 12 Months: 1.25 to 1.49`) %>%
-    dplyr::select(total,below_150) %>% dplyr::mutate(below_150_prop= below_150/total)
-
-  results$low_income_prop = props$below_150_prop
-  results$low_income_n = props$below_150
-  print(paste0(round(2/10*100,0),"% done with queries"))
+  sub = data[,1:8]
+  if(poverty_line=="150%"){
+    props = sub %>% dplyr::rename(total=`Ratio of Income to Poverty Level in the Past 12 Months: Total:`) %>%
+      dplyr::mutate(below_poverty= `Ratio of Income to Poverty Level in the Past 12 Months: Under .50`+
+                      `Ratio of Income to Poverty Level in the Past 12 Months: .50 to .99`+
+                      `Ratio of Income to Poverty Level in the Past 12 Months: 1.00 to 1.24`+
+                      `Ratio of Income to Poverty Level in the Past 12 Months: 1.25 to 1.49`) %>%
+      dplyr::select(total,below_poverty) %>% dplyr::mutate(below_poverty_prop= below_poverty/total)
+  }else if(poverty_line=="200%"){
+    props = sub %>% dplyr::rename(total=`Ratio of Income to Poverty Level in the Past 12 Months: Total:`) %>%
+      dplyr::mutate(below_poverty= `Ratio of Income to Poverty Level in the Past 12 Months: Under .50`+
+                      `Ratio of Income to Poverty Level in the Past 12 Months: .50 to .99`+
+                      `Ratio of Income to Poverty Level in the Past 12 Months: 1.00 to 1.24`+
+                      `Ratio of Income to Poverty Level in the Past 12 Months: 1.25 to 1.49`+
+                      `Ratio of Income to Poverty Level in the Past 12 Months: 1.50 to 1.84`+
+                      `Ratio of Income to Poverty Level in the Past 12 Months: 1.85 to 1.99`) %>%
+      dplyr::select(total,below_poverty) %>% dplyr::mutate(below_poverty_prop= below_poverty/total)
+  }
   
-  #Renters
-  tid = "B11012"
+
+  results$low_income_prop = props$below_poverty_prop
+  results$low_income_n = props$below_poverty
+  print(paste0(round(2/11*100,0),"% done with queries"))
+  
+  #Minority Population
+  tid = "B03002"
   result = acs.fetch(endyear = endyear,span=span,geography=geog,table.number =tid,col.names = "pretty")
   data = as_data_frame(result@estimate)
-  sub = data %>% dplyr::select(`HOUSEHOLD TYPE BY TENURE: Total:`,contains("Renter"))
+  sub = data %>% dplyr::mutate(minority=`Hispanic or Latino by Race: Total:`-
+                               `Hispanic or Latino by Race: Not Hispanic or Latino: White alone`) %>%
+    dplyr::rename(total = `Hispanic or Latino by Race: Total:`) %>%
+    dplyr::select(minority,total)
   sub$geography = names
-  props = sub %>% dplyr::rename(total=`HOUSEHOLD TYPE BY TENURE: Total:`) %>%
+  props = sub %>% 
+    gather(key,value,-geography,-total) %>%
+    distinct() %>%
+    dplyr::group_by(geography,total) %>% dplyr::summarise(minority = sum(value)) %>%
+    dplyr::ungroup() %>%
+    dplyr::mutate(minority_prop = minority/total)
+  
+  results = results %>% left_join(props %>% dplyr::select(geography,minority_prop,minority) %>%
+                                    dplyr::rename(minority_n=minority,NAME=geography),by="NAME")
+  print(paste0(round(3/11*100,0),"% done with queries"))
+  
+  #Renters
+  tid = "B25003"
+  result = acs.fetch(endyear = endyear,span=span,geography=geog,table.number =tid,col.names = "pretty")
+  data = as_data_frame(result@estimate)
+  sub = data %>% dplyr::select(`Tenure: Renter occupied`, `Tenure: Total:` )
+  sub$geography = names
+  props = sub %>% dplyr::rename(total=`Tenure: Total:`) %>%
     gather(key,value,-geography,-total) %>%
     distinct() %>%
     dplyr::group_by(geography,total) %>% dplyr::summarise(renters = sum(value)) %>%
     dplyr::ungroup() %>%
     dplyr::mutate(renter_prop = renters/total)
-   
+  
   results = results %>% left_join(props %>% dplyr::select(geography,renter_prop,renters) %>%
                                     dplyr::rename(renter_n=renters,NAME=geography),by="NAME")
-  print(paste0(round(3/10*100,0),"% done with queries"))
+  print(paste0(round(4/11*100,0),"% done with queries"))
 
   #Older Adults
   tid = "B01001"
@@ -76,7 +108,7 @@ transit_pops = function(geog,endyear=2014, span=5){
 
   results = results %>% left_join(props %>% dplyr::select(geography,old_prop,old) %>%
                                     dplyr::rename(older_adults_prop=old_prop,older_adults_n=old,NAME=geography),by="NAME")
-  print(paste0(round(4/10*100,0),"% done with queries"))
+  print(paste0(round(5/11*100,0),"% done with queries"))
 
   #Youth 10-17
   tid = "B01001"
@@ -93,7 +125,7 @@ transit_pops = function(geog,endyear=2014, span=5){
 
   results = results %>% left_join(props %>% dplyr::select(geography,young_prop,young) %>%
                                     dplyr::rename(youth_10.17_prop=young_prop,youth_10.17_n=young,NAME=geography),by="NAME")
-  print(paste0(round(5/10*100,0),"% done with queries"))
+  print(paste0(round(6/11*100,0),"% done with queries"))
   
   #Youth 18-21
   tid = "B01001"
@@ -110,7 +142,7 @@ transit_pops = function(geog,endyear=2014, span=5){
   
   results = results %>% left_join(props %>% dplyr::select(geography,young_prop,young) %>%
                                     dplyr::rename(youth_18.21_prop=young_prop,youth_18.21_n=young,NAME=geography),by="NAME")
-  print(paste0(round(6/10*100,0),"% done with queries"))
+  print(paste0(round(7/11*100,0),"% done with queries"))
 
   #College Age 18-24
   tid = "B01001"
@@ -128,7 +160,7 @@ transit_pops = function(geog,endyear=2014, span=5){
 
   results = results %>% left_join(props %>% dplyr::select(geography,young_prop,young) %>%
                                     dplyr::rename(college_age_prop=young_prop,college_age_n=young,NAME=geography),by="NAME")
-  print(paste0(round(7/10*100,0),"% done with queries"))
+  print(paste0(round(8/11*100,0),"% done with queries"))
 
   #Persons with disabilities
   tid = "C21007"
@@ -145,7 +177,7 @@ transit_pops = function(geog,endyear=2014, span=5){
 
   results = results %>% left_join(props %>% dplyr::select(geography,disabled_prop,disabled) %>%
                                     dplyr::rename(pwd_18up_prop=disabled_prop,pwd_18up_n=disabled,NAME=geography),by="NAME")
-  print(paste0(round(8/10*100,0),"% done with queries"))
+  print(paste0(round(9/11*100,0),"% done with queries"))
 
   #Households without Vehicles
   tid = "B25044"
@@ -162,7 +194,7 @@ transit_pops = function(geog,endyear=2014, span=5){
 
   results = results %>% left_join(props %>% dplyr::select(geography,zero_vehicles_prop,zero_vehicles) %>%
                                     dplyr::rename(no_vehicles_hh_prop=zero_vehicles_prop, no_vehicles_hh_n=zero_vehicles,NAME=geography),by="NAME")
-  print(paste0(round(9/10*100,0),"% done with queries"))
+  print(paste0(round(10/11*100,0),"% done with queries"))
 
   #Limited English
   tid = "B16004"
@@ -179,7 +211,7 @@ transit_pops = function(geog,endyear=2014, span=5){
 
   results = results %>% left_join(props %>% dplyr::select(geography,no_english_prop,no_english) %>%
                                     dplyr::rename(lep_prop=no_english_prop,lep_n=no_english,NAME=geography),by="NAME")
-  print(paste0(round(10/10*100,0),"% done with queries"))
+  print(paste0(round(11/11*100,0),"% done with queries"))
 
   return(results)
 }
@@ -258,7 +290,7 @@ geo_join_acs = function(table,geo_level){
       geom = tigris::block_groups(state = states[1],county = counties)
     }
     table = table %>%
-      mutate(GEOID=paste0(state,str_pad(county,side="left",width=3,pad="0"),
+      mutate(GEOID=paste0(str_pad(state,side="left",width=2,pad="0"),str_pad(county,side="left",width=3,pad="0"),
                           str_pad(tract,side="left",width=6,pad="0"),blockgroup))
     full = geom
     full@data = data.frame(
