@@ -26,6 +26,11 @@ getGoogleDirections <- function(from, to, key, mode, departure=NULL, arrival=NUL
       time = as.numeric(departure)
       baseurl <- "https://maps.googleapis.com/maps/api/directions/json?origin="
       url = paste0(baseurl,from,"&destination=",to,"&mode=",mode,"&key=",key,"&departure_time=",time)
+      
+      if(!is.null(traffic_model)){
+      url = paste0(url,"&traffic_model=",traffic_model)
+      }
+      
     }else if(!is.null(arrival)){
       time = as.numeric(arrival)
       baseurl <- "https://maps.googleapis.com/maps/api/directions/json?origin="
@@ -45,12 +50,7 @@ getGoogleDirections <- function(from, to, key, mode, departure=NULL, arrival=NUL
       }
       url = paste0(url,"&transit_routing_preference=",transit_rt_pref)
     }
-
-    if(!is.null(traffic_model)){
-      url = paste0(url,"&traffic_model=",traffic_model)
-    }
-
-
+      
     return(rjson::fromJSON(paste(readLines(url), collapse="")))
   }else{
 
